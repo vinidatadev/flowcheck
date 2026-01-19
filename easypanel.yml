@@ -1,0 +1,27 @@
+name: flowcheck
+services:
+  - name: flowcheck-app
+    type: app
+    source:
+      type: git
+      url: https://github.com/seu-usuario/flowcheck # Substitua pela URL do seu repositório
+      branch: main
+    build:
+      type: dockerfile
+      dockerfile: Dockerfile
+    environment:
+      - name: VITE_SUPABASE_URL
+        value: "your_supabase_project_url" # Substitua pela sua URL do Supabase
+      - name: VITE_SUPABASE_ANON_KEY
+        value: "your_supabase_anon_key" # Substitua pela sua chave anônima do Supabase
+    domains:
+      - name: flowcheck.seu-dominio.com # Substitua pelo seu domínio
+    ports:
+      - published: 80
+        target: 80
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512M
+          cpus: 0.5
