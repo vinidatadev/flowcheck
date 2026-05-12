@@ -49,6 +49,11 @@ export class AuthService {
       callback(session?.user || null)
     })
   }
+
+  async updatePassword(newPassword: string): Promise<void> {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw new Error(`Erro ao atualizar senha: ${error.message}`)
+  }
 }
 
 export const authService = new AuthService()

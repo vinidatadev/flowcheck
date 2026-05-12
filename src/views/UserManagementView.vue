@@ -154,6 +154,8 @@
                 <option value="">Selecione o nível</option>
                 <option value="1">1 - Usuário Padrão</option>
                 <option value="2">2 - Administrador</option>
+                <option value="3">3 - Gestor Visualizador</option>
+                <option value="4">4 - Gestor Ordenador</option>
               </select>
               <div v-if="errors.nivel" class="error-message">{{ errors.nivel }}</div>
             </div>
@@ -227,6 +229,32 @@
             </li>
           </ul>
         </div>
+
+        <!-- Reset de senha -->
+        <div class="info-card">
+          <div class="info-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <h3>Resetar Senha</h3>
+          </div>
+          <p class="reset-hint">Redefine a senha do usuário para <strong>gac@123</strong>. O usuário deverá trocar após o login.</p>
+
+          <div v-if="loadingUsers" class="reset-loading">Carregando usuários...</div>
+          <ul v-else class="user-reset-list">
+            <li v-for="u in userList" :key="u.id" class="user-reset-item">
+              <span class="user-reset-name">{{ u.nome_usuario }}</span>
+              <button
+                class="reset-pw-btn"
+                :disabled="resettingId === u.id_user"
+                @click="handleResetPassword(u)"
+              >
+                {{ resettingId === u.id_user ? 'Resetando...' : '🔑 Resetar' }}
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -238,14 +266,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usersService, type CreateUserData } from '@/services/users'
+import type { User } from '@/types/user'
+
+const DEFAULT_PASSWORD = 'gac@123'
 
 const router = useRouter()
-
 const loading = ref(false)
 const showPassword = ref(false)
+const loadingUsers = ref(false)
+const userList = ref<User[]>([])
+const resettingId = ref<string | null>(null)
 
 const formData = ref<CreateUserData>({
   email: '',
@@ -405,6 +438,30 @@ const showToast = (message: string, type: 'success' | 'error') => {
     toastMessage.value = ''
   }, 5000)
 }
+
+async function loadUsers() {
+  loadingUsers.value = true
+  try {
+    userList.value = await usersService.getUsers()
+  } finally {
+    loadingUsers.value = false
+  }
+}
+
+async function handleResetPassword(user: User) {
+  if (!user.id_user) return
+  resettingId.value = user.id_user
+  try {
+    await usersService.resetUserPassword(user.id_user, DEFAULT_PASSWORD)
+    showToast(`Senha de ${user.nome_usuario} resetada para "${DEFAULT_PASSWORD}"`, 'success')
+  } catch (err) {
+    showToast(err instanceof Error ? err.message : 'Erro ao resetar senha', 'error')
+  } finally {
+    resettingId.value = null
+  }
+}
+
+onMounted(loadUsers)
 </script>
 
 <style scoped>
@@ -706,6 +763,66 @@ const showToast = (message: string, type: 'success' | 'error') => {
 .info-list strong {
   color: #333;
   font-weight: 600;
+}
+
+.reset-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.reset-loading {
+  font-size: 0.85rem;
+  color: #adb5bd;
+}
+
+.user-reset-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-reset-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.user-reset-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.reset-pw-btn {
+  padding: 4px 12px;
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.reset-pw-btn:hover:not(:disabled) {
+  background: #ffc107;
+  color: #333;
+}
+
+.reset-pw-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .toast {

@@ -12,6 +12,7 @@
       @navigate-to-users="router.push('/users')"
       @navigate-to-dashboard="router.push('/dashboard')"
       @navigate-to-ai="router.push('/ai-assistant')"
+      @change-password="showChangePassword = true"
     />
 
     <main class="main-content" :class="{ 'sidebar-open': sidebar.sidebarOpen.value }">
@@ -170,6 +171,13 @@
         @edit="() => {}"
       />
     </main>
+
+    <ChangePasswordModal
+      :is-open="showChangePassword"
+      title="Alterar minha senha"
+      :on-save="handleChangePassword"
+      @close="showChangePassword = false"
+    />
   </div>
 </template>
 
@@ -180,12 +188,15 @@ import { useAuth } from '@/composables/useAuth'
 import { useDashboard } from '@/composables/useDashboard'
 import { useSidebar } from '@/composables/useSidebar'
 import { useMetadata } from '@/composables/useMetadata'
+import { usePermissions } from '@/composables/usePermissions'
 import draggable from 'vuedraggable'
 import Sidebar from '@/components/Sidebar.vue'
 import DashboardKpiCard from '@/components/DashboardKpiCard.vue'
 import DashboardFilters from '@/components/DashboardFilters.vue'
 import DashboardQueueItem from '@/components/DashboardQueueItem.vue'
 import TaskDetailModal from '@/components/TaskDetailModal.vue'
+import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
+import { authService } from '@/services/auth'
 import type { TaskWithContext } from '@/types/flowcheck'
 
 const router = useRouter()
@@ -194,7 +205,8 @@ const dashboard = useDashboard()
 const sidebar = useSidebar()
 const metadata = useMetadata()
 
-const isLevel2 = computed(() => (auth.state.user?.nivel ?? 0) >= 2)
+const permissions = usePermissions()
+const isLevel2 = computed(() => permissions.canReorderDashboard.value)
 
 // Split filtered tasks into two groups for rendering
 const inProgressTasks = computed(() =>
@@ -221,6 +233,12 @@ const closeTaskDetail = () => {
 const reload = () => {
   const userLevel = auth.state.user?.nivel ?? 0
   dashboard.loadAllTasks(userLevel)
+}
+
+const showChangePassword = ref(false)
+
+async function handleChangePassword(newPassword: string) {
+  await authService.updatePassword(newPassword)
 }
 
 const handleLogout = async () => {

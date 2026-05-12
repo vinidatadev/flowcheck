@@ -40,72 +40,35 @@ export class UsersService {
   }
 
   async createUser(userData: CreateUserData): Promise<User> {
-    try {
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        email_confirm: true,
-        user_metadata: {
-          nome_usuario: userData.nome_usuario,
-          cargo: userData.cargo
-        }
-      })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Sessão não encontrada. Faça login novamente.')
 
-      if (authError) {
-        throw new Error(`Erro ao criar usuário no Auth: ${authError.message}`)
-      }
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify(userData),
+    })
 
-      if (!authData.user) {
-        throw new Error('Usuário não foi criado no Auth')
-      }
-
-      // 2. Inserir dados na tabela public.user
-      const { data: dbData, error: dbError } = await supabase
-        .from('user')
-        .insert([{
-          id_user: authData.user.id,
-          nome_usuario: userData.nome_usuario,
-          cargo: userData.cargo,
-          nivel: userData.nivel,
-          foto: userData.foto || null
-        }])
-        .select()
-        .single()
-
-      if (dbError) {
-        // Se falhar ao inserir na tabela, tentar deletar o usuário do Auth
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id)
-        } catch (cleanupError) {
-          console.error('Erro ao limpar usuário do Auth:', cleanupError)
-        }
-        throw new Error(`Erro ao salvar dados do usuário: ${dbError.message}`)
-      }
-
-      return dbData
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error
-      }
-      throw new Error('Erro desconhecido ao criar usuário')
+    const result = await response.json()
+    if (!response.ok) {
+      throw new Error(result.error ?? `Erro ${response.status}`)
     }
+
+    return result.user as User
   }
 
   async checkEmailExists(email: string): Promise<boolean> {
-    try {
-      // Verificar no Auth se o email já existe
-      const { data, error } = await supabase.auth.admin.listUsers()
-      
-      if (error) {
-        throw new Error(`Erro ao verificar email: ${error.message}`)
-      }
-
-      return data.users.some(user => user.email === email)
-    } catch (error) {
-      console.error('Erro ao verificar email:', error)
-      return false
-    }
+    // Check via the Edge Function is not needed here — we just attempt creation
+    // and let the Auth layer reject duplicate emails. For the pre-validation UI
+    // check we query the public user table by joining on a known email pattern,
+    // but since email is only in Auth (not in public.user), we skip this check
+    // and rely on the Edge Function returning a clear error on duplicate email.
+    return false
   }
 
   async checkUsernameExists(username: string): Promise<boolean> {
@@ -120,6 +83,27 @@ export class UsersService {
     }
 
     return (data?.length || 0) > 0
+  }
+
+  async resetUserPassword(userId: string, newPassword: string): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Sessão não encontrada. Faça login novamente.')
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const response = await fetch(`${supabaseUrl}/functions/v1/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ userId, newPassword }),
+    })
+
+    const result = await response.json()
+    if (!response.ok) {
+      throw new Error(result.error ?? `Erro ${response.status}`)
+    }
   }
 }
 

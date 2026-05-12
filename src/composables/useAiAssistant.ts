@@ -103,12 +103,13 @@ function buildSystemPrompt(ctx: AiAssistantContext): string {
   const userNames = ctx.users.map(u => u.nome_usuario).filter(Boolean).join(', ') || 'nenhum'
   const tagNames = ctx.tags.map(t => t.tag).filter(Boolean).join(', ') || 'nenhuma'
   const tagProcessoNames = ctx.tagsProcesso.map(t => t.tag_processo).filter(Boolean).join(', ') || 'nenhuma'
-  const isLevel2 = ctx.userLevel === 2
-  const bucketOptions = isLevel2
+  // Levels 2, 3 and 4 can select a bucket; level 1 always uses TaskInbox
+  const canSelectBucket = (ctx.userLevel ?? 0) >= 2
+  const bucketOptions = canSelectBucket
     ? ctx.buckets.map(b => `${b.id}:${b.bucket}`).filter(Boolean).join(', ')
     : ''
 
-  const bucketInstructions = isLevel2
+  const bucketInstructions = canSelectBucket
     ? `- bucketId: ID numérico do bucket escolhido. Opções disponíveis: ${bucketOptions}. Se o usuário não mencionar, pergunte.`
     : `- bucketId: sempre null (o bucket é definido automaticamente para este usuário).`
 

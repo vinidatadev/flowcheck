@@ -16,6 +16,9 @@
           <span :class="['level-badge', getLevelClass()]">
             {{ getLevelText() }}
           </span>
+          <button class="change-pw-btn" @click.stop="$emit('change-password')" title="Alterar senha">
+            🔑 Alterar senha
+          </button>
         </div>
       </div>
       
@@ -229,6 +232,7 @@ defineEmits<{
   'navigate-to-users': []
   'navigate-to-dashboard': []
   'navigate-to-ai': []
+  'change-password': []
 }>()
 
 const isOnDashboard = computed(() => route.path === '/dashboard')
@@ -257,24 +261,22 @@ const getInitials = (name: string | null | undefined): string => {
 const getLevelText = (): string => {
   const nivel = props.user?.nivel
   switch (nivel) {
-    case 2:
-      return 'Admin'
-    case 1:
-      return 'User'
-    default:
-      return 'Guest'
+    case 2: return 'Admin'
+    case 3: return 'Gestor'
+    case 4: return 'Gestor+'
+    case 1: return 'User'
+    default: return 'Guest'
   }
 }
 
 const getLevelClass = (): string => {
   const nivel = props.user?.nivel
   switch (nivel) {
-    case 2:
-      return 'level-admin'
-    case 1:
-      return 'level-restricted'
-    default:
-      return 'level-undefined'
+    case 2: return 'level-admin'
+    case 3:
+    case 4: return 'level-gestor'
+    case 1: return 'level-restricted'
+    default: return 'level-undefined'
   }
 }
 </script>
@@ -332,6 +334,24 @@ const getLevelClass = (): string => {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+.change-pw-btn {
+  margin-top: 0.5rem;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #cbd5e1;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.change-pw-btn:hover {
+  background: rgba(255,255,255,0.14);
+  color: #e2e8f0;
+}
+
 .user-avatar img {
   width: 100%;
   height: 100%;
@@ -385,6 +405,12 @@ const getLevelClass = (): string => {
   background-color: rgba(34, 197, 94, 0.15);
   color: #4ade80;
   border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.level-gestor {
+  background-color: rgba(99, 179, 237, 0.15);
+  color: #63b3ed;
+  border: 1px solid rgba(99, 179, 237, 0.2);
 }
 
 .level-restricted {

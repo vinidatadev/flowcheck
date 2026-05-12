@@ -12,6 +12,7 @@
       @navigate-to-users="navigateToUsers"
       @navigate-to-dashboard="navigateToDashboard"
       @navigate-to-ai="navigateToAi"
+      @change-password="showChangePassword = true"
     />
     
     <main class="main-content" :class="{ 'sidebar-open': sidebar.sidebarOpen.value }">
@@ -76,6 +77,13 @@
         {{ toastMessage }}
       </div>
     </main>
+
+    <ChangePasswordModal
+      :is-open="showChangePassword"
+      title="Alterar minha senha"
+      :on-save="handleChangePassword"
+      @close="showChangePassword = false"
+    />
   </div>
 </template>
 
@@ -92,6 +100,8 @@ import KanbanBoard from '@/components/KanbanBoard.vue'
 import TaskDetailModal from '@/components/TaskDetailModal.vue'
 import TaskForm from '@/components/TaskForm.vue'
 import TaskDeleteConfirm from '@/components/TaskDeleteConfirm.vue'
+import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
+import { authService } from '@/services/auth'
 import type { Task, TaskFormData, TaskWithContext } from '@/types/flowcheck'
 
 const router = useRouter()
@@ -115,6 +125,12 @@ const taskToDelete = ref<Task | null>(null)
 // Estados de feedback
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error'>('success')
+
+const showChangePassword = ref(false)
+
+async function handleChangePassword(newPassword: string) {
+  await authService.updatePassword(newPassword)
+}
 
 const handleLogout = async () => {
   await auth.logout()

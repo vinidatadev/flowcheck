@@ -233,7 +233,7 @@ const loading = ref(false)
 const metadata = useMetadata()
 const permissions = usePermissions()
 
-const isLevel2 = computed(() => (props.userLevel ?? 0) >= 2)
+const isLevel2 = computed(() => (props.userLevel ?? 0) === 2)
 
 const formData = ref<TaskFormData>({
   titulo_task: '',

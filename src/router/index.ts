@@ -76,7 +76,7 @@ router.beforeEach(async (to, from, next) => {
     // Rota de guest (login), usuário já autenticado
     next('/home')
   } else if (requiresLevel2 && userLevel < 2) {
-    // Rota requer nível 2, usuário não tem permissão
+    // Rota requer nível 2 (admin), usuários 1, 3 e 4 não têm permissão
     next('/home')
   } else {
     // Permitir navegação

@@ -8,45 +8,47 @@ export function usePermissions() {
   const userLevel = computed(() => auth.state.user?.nivel || 0)
   const currentUserId = computed(() => auth.state.user?.id_user || '')
 
-  // Permissões baseadas no nível do usuário
-  const canCreateTask = computed(() => {
-    return userLevel.value >= 1 // Nível 1 e 2 podem criar
-  })
+  // Níveis:
+  // 1 = Usuário padrão (só TaskInbox, formulário simplificado)
+  // 2 = Admin (acesso total)
+  // 3 = Gestor Visualizador (todos os buckets, sem reordenar relatório)
+  // 4 = Gestor Ordenador (todos os buckets, pode reordenar relatório)
+
+  const canCreateTask = computed(() => userLevel.value >= 1)
 
   const canEditTask = computed(() => {
     return (task: Task) => {
-      if (userLevel.value >= 2) {
-        return true // Admin pode editar qualquer task
-      }
-      if (userLevel.value === 1) {
-        return task.criado_por === currentUserId.value // User só edita próprias tasks
-      }
-      return false
+      if (userLevel.value === 2) return true // Admin edita tudo
+      // Níveis 1, 3 e 4 só editam as próprias tasks
+      return task.criado_por === currentUserId.value
     }
   })
 
-  const canMoveTask = computed(() => {
-    return userLevel.value >= 2 // Apenas nível 2 pode mover
-  })
+  // Só admin (2) pode mover tasks entre colunas no kanban
+  const canMoveTask = computed(() => userLevel.value === 2)
 
-  const canDeleteTask = computed(() => {
-    return userLevel.value >= 2 // Apenas nível 2 pode excluir
-  })
+  // Só admin (2) pode excluir tasks
+  const canDeleteTask = computed(() => userLevel.value === 2)
 
-  // Função para verificar se o usuário é admin
-  const isAdmin = computed(() => {
-    return userLevel.value === 2
-  })
+  // Pode reordenar a fila no relatório: admin (2) e gestor ordenador (4)
+  const canReorderDashboard = computed(() =>
+    userLevel.value === 2 || userLevel.value === 4
+  )
 
-  // Função para verificar se o usuário tem acesso restrito
-  const isRestrictedUser = computed(() => {
-    return userLevel.value === 1
-  })
+  // Vê todos os buckets: admin (2), gestor visualizador (3), gestor ordenador (4)
+  const canSeeAllBuckets = computed(() => userLevel.value >= 2)
 
-  // Função para verificar se o usuário é o criador da task
-  const isTaskOwner = (task: Task): boolean => {
-    return task.criado_por === currentUserId.value
-  }
+  // Formulário completo: só admin (2)
+  const hasFullForm = computed(() => userLevel.value === 2)
+
+  // Bucket selecionável no AI: admin (2), gestor visualizador (3), gestor ordenador (4)
+  const canSelectBucket = computed(() => userLevel.value >= 2)
+
+  const isAdmin = computed(() => userLevel.value === 2)
+  const isRestrictedUser = computed(() => userLevel.value === 1)
+
+  const isTaskOwner = (task: Task): boolean =>
+    task.criado_por === currentUserId.value
 
   return {
     userLevel,
@@ -55,8 +57,12 @@ export function usePermissions() {
     canEditTask,
     canMoveTask,
     canDeleteTask,
+    canReorderDashboard,
+    canSeeAllBuckets,
+    hasFullForm,
+    canSelectBucket,
     isAdmin,
     isRestrictedUser,
-    isTaskOwner
+    isTaskOwner,
   }
 }

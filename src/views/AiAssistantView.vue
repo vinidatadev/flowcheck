@@ -12,6 +12,7 @@
       @navigate-to-users="router.push('/users')"
       @navigate-to-dashboard="router.push('/dashboard')"
       @navigate-to-ai="router.push('/ai-assistant')"
+      @change-password="showChangePassword = true"
     />
 
     <main class="main-content" :class="{ 'sidebar-open': sidebar.sidebarOpen.value }">
@@ -55,6 +56,13 @@
     <div v-if="toastMessage" class="toast" :class="toastType">
       {{ toastMessage }}
     </div>
+
+    <ChangePasswordModal
+      :is-open="showChangePassword"
+      title="Alterar minha senha"
+      :on-save="handleChangePassword"
+      @close="showChangePassword = false"
+    />
   </div>
 </template>
 
@@ -72,6 +80,8 @@ import { categoriesService } from '@/services/categories'
 import Sidebar from '@/components/Sidebar.vue'
 import AiChat from '@/components/AiChat.vue'
 import TaskForm from '@/components/TaskForm.vue'
+import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
+import { authService } from '@/services/auth'
 import type { TaskFormData, Task, Bucket } from '@/types/flowcheck'
 
 const router = useRouter()
@@ -232,6 +242,12 @@ function showToast(message: string, type: 'success' | 'error') {
   toastMessage.value = message
   toastType.value = type
   setTimeout(() => { toastMessage.value = '' }, 3000)
+}
+
+const showChangePassword = ref(false)
+
+async function handleChangePassword(newPassword: string) {
+  await authService.updatePassword(newPassword)
 }
 
 async function handleLogout() {

@@ -5,11 +5,11 @@ export class BucketsService {
   async getBucketsByUserLevel(userLevel: number | null): Promise<Bucket[]> {
     let query = supabase.from('buckets').select('*')
 
-    // Usuário nível 1 só vê TaskInbox
+    // Only level 1 is restricted to TaskInbox
+    // Levels 2, 3 and 4 see all buckets
     if (userLevel === 1) {
       query = query.eq('bucket', 'TaskInbox')
     }
-    // Usuário nível 2 vê todos os buckets (sem filtro adicional)
 
     const { data, error } = await query.order('bucket')
 
