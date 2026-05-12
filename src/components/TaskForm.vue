@@ -5,11 +5,13 @@
         <h2>{{ mode === 'create' ? 'Nova Task' : 'Editar Task' }}</h2>
         <button @click="closeModal" type="button" class="close-button">✕</button>
       </div>
-      
+
       <form @submit.prevent="handleSubmit" class="task-form">
+
+        <!-- ── Seção: Informações Básicas (todos os níveis) ── -->
         <div class="form-section">
           <h3>Informações Básicas</h3>
-          
+
           <div class="form-group">
             <label for="titulo_task">Título *</label>
             <input
@@ -21,7 +23,7 @@
               :disabled="loading"
             />
           </div>
-          
+
           <div class="form-group">
             <label for="descricao">Descrição *</label>
             <textarea
@@ -33,59 +35,43 @@
               :disabled="loading"
             ></textarea>
           </div>
-          
+
           <div class="form-row">
             <div class="form-group">
               <label>
-                <input
-                  v-model="formData.prioridade"
-                  type="checkbox"
-                  :disabled="loading"
-                />
+                <input v-model="formData.prioridade" type="checkbox" :disabled="loading" />
                 Prioridade Alta
               </label>
             </div>
-            
-            <div class="form-group">
+
+            <!-- Progresso: só nível 2 -->
+            <div v-if="isLevel2" class="form-group">
               <label for="percenti_concluido">Progresso: {{ formData.percenti_concluido }}%</label>
               <input
                 id="percenti_concluido"
                 v-model.number="formData.percenti_concluido"
-                type="range"
-                min="0"
-                max="100"
-                step="5"
+                type="range" min="0" max="100" step="5"
                 :disabled="loading"
               />
             </div>
           </div>
         </div>
-        
-        <div class="form-section">
+
+        <!-- ── Seção: Detalhes (só nível 2) ── -->
+        <div v-if="isLevel2" class="form-section">
           <h3>Detalhes</h3>
-          
+
           <div class="form-row">
             <div class="form-group">
               <label for="data_inicio">Data de Início</label>
-              <input
-                id="data_inicio"
-                v-model="formData.data_inicio"
-                type="datetime-local"
-                :disabled="loading"
-              />
+              <input id="data_inicio" v-model="formData.data_inicio" type="datetime-local" :disabled="loading" />
             </div>
-            
             <div class="form-group">
               <label for="data_fim">Data de Fim</label>
-              <input
-                id="data_fim"
-                v-model="formData.data_fim"
-                type="datetime-local"
-                :disabled="loading"
-              />
+              <input id="data_fim" v-model="formData.data_fim" type="datetime-local" :disabled="loading" />
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="ganhos">Ganhos Esperados</label>
             <textarea
@@ -97,10 +83,26 @@
             ></textarea>
           </div>
         </div>
-        
+
+        <!-- Ganhos: nível 1 vê aqui (fora da seção Detalhes) -->
+        <div v-if="!isLevel2" class="form-section">
+          <h3>Detalhes</h3>
+          <div class="form-group">
+            <label for="ganhos_l1">Ganhos Esperados</label>
+            <textarea
+              id="ganhos_l1"
+              v-model="formData.ganhos"
+              rows="2"
+              placeholder="Descreva os ganhos esperados"
+              :disabled="loading"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- ── Seção: Pessoas e Tags ── -->
         <div class="form-section">
-          <h3>Pessoas e Tags</h3>
-          
+          <h3>Pessoas{{ isLevel2 ? ' e Tags' : '' }}</h3>
+
           <div class="form-group">
             <label>Responsáveis</label>
             <UserMultiSelect
@@ -110,39 +112,44 @@
               :disabled="loading"
             />
           </div>
-          
+
           <div class="form-group">
-            <label>Solicitantes</label>
+            <label>Solicitantes *</label>
             <UserMultiSelect
               v-model="formData.solicitante"
               :users="metadata.state.users"
               placeholder="Busque e selecione solicitantes"
               :disabled="loading"
             />
+            <p v-if="formData.solicitante.length === 0" class="field-hint">Obrigatório — você já foi adicionado por padrão.</p>
           </div>
-          
-          <div class="form-group">
-            <label>Tags</label>
-            <TagMultiSelect
-              v-model="formData.tag"
-              :options="tagOptions"
-              placeholder="Busque e selecione tags"
-              :disabled="loading"
-            />
-          </div>
-          
-          <div class="form-group">
-            <label>Tags de Processo</label>
-            <TagMultiSelect
-              v-model="formData.tag_processo"
-              :options="tagProcessoOptions"
-              placeholder="Busque e selecione tags de processo"
-              :disabled="loading"
-            />
-          </div>
+
+          <!-- Tags: só nível 2 -->
+          <template v-if="isLevel2">
+            <div class="form-group">
+              <label>Tags</label>
+              <TagMultiSelect
+                v-model="formData.tag"
+                :options="tagOptions"
+                placeholder="Busque e selecione tags"
+                :disabled="loading"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Tags de Processo</label>
+              <TagMultiSelect
+                v-model="formData.tag_processo"
+                :options="tagProcessoOptions"
+                placeholder="Busque e selecione tags de processo"
+                :disabled="loading"
+              />
+            </div>
+          </template>
         </div>
-        
-        <div class="form-section">
+
+        <!-- ── Seção: Subtasks (só nível 2) ── -->
+        <div v-if="isLevel2" class="form-section">
           <h3>Subtasks</h3>
           <SubtaskList
             v-model:subtasks="formData.subtask"
@@ -150,35 +157,27 @@
             :disabled="loading"
           />
         </div>
-        
-        <div class="form-section">
+
+        <!-- ── Seção: Configurações (só nível 2) ── -->
+        <div v-if="isLevel2" class="form-section">
           <h3>Configurações</h3>
-          
           <div class="form-row">
             <div class="form-group">
               <label>
-                <input
-                  v-model="formData.projeto"
-                  type="checkbox"
-                  :disabled="loading"
-                />
+                <input v-model="formData.projeto" type="checkbox" :disabled="loading" />
                 É um Projeto
               </label>
             </div>
-            
             <div class="form-group">
               <label>
-                <input
-                  v-model="formData.pos_s4hana"
-                  type="checkbox"
-                  :disabled="loading"
-                />
+                <input v-model="formData.pos_s4hana" type="checkbox" :disabled="loading" />
                 Relacionado ao SAP S/4HANA
               </label>
             </div>
           </div>
         </div>
-        
+
+        <!-- ── Ações ── -->
         <div class="form-actions">
           <div class="left-actions">
             <button
@@ -191,26 +190,16 @@
               🗑️ Excluir Task
             </button>
           </div>
-          
           <div class="right-actions">
-            <button
-              type="button"
-              @click="closeModal"
-              class="cancel-button"
-              :disabled="loading"
-            >
+            <button type="button" @click="closeModal" class="cancel-button" :disabled="loading">
               Cancelar
             </button>
-            
-            <button
-              type="submit"
-              class="save-button"
-              :disabled="loading || !isFormValid"
-            >
+            <button type="submit" class="save-button" :disabled="loading || !isFormValid">
               {{ loading ? 'Salvando...' : (mode === 'create' ? 'Criar Task' : 'Salvar Alterações') }}
             </button>
           </div>
         </div>
+
       </form>
     </div>
   </div>
@@ -224,11 +213,14 @@ import UserMultiSelect from './UserMultiSelect.vue'
 import TagMultiSelect from './TagMultiSelect.vue'
 import SubtaskList from './SubtaskList.vue'
 import type { Task, TaskFormData } from '@/types/flowcheck'
+import type { User } from '@/types/user'
 
 const props = defineProps<{
   isOpen: boolean
   mode: 'create' | 'edit'
   task?: Task | null
+  currentUser?: User | null
+  userLevel?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -240,6 +232,8 @@ const emit = defineEmits<{
 const loading = ref(false)
 const metadata = useMetadata()
 const permissions = usePermissions()
+
+const isLevel2 = computed(() => (props.userLevel ?? 0) >= 2)
 
 const formData = ref<TaskFormData>({
   titulo_task: '',
@@ -259,34 +253,37 @@ const formData = ref<TaskFormData>({
   pos_s4hana: false
 })
 
-const tagOptions = computed(() => {
-  return metadata.state.tags.map(tag => tag.tag).filter(Boolean) as string[]
-})
+const tagOptions = computed(() =>
+  metadata.state.tags.map(t => t.tag).filter(Boolean) as string[]
+)
 
-const tagProcessoOptions = computed(() => {
-  return metadata.state.tagsProcesso.map(tag => tag.tag_processo).filter(Boolean) as string[]
-})
+const tagProcessoOptions = computed(() =>
+  metadata.state.tagsProcesso.map(t => t.tag_processo).filter(Boolean) as string[]
+)
 
 const isFormValid = computed(() => {
-  return formData.value.titulo_task.trim() !== '' && 
-         formData.value.descricao.trim() !== ''
+  const d = formData.value
+  const baseValid = d.titulo_task.trim() !== '' && d.descricao.trim() !== ''
+  // Solicitante is required for all levels
+  const solicitanteValid = d.solicitante.length > 0
+  return baseValid && solicitanteValid
 })
 
-// Carregar metadados quando o componente for montado
 onMounted(() => {
   metadata.loadMetadata()
 })
 
-// Resetar formulário quando abrir/fechar
 watch(() => props.isOpen, (isOpen) => {
-  if (isOpen) {
-    resetForm()
-  }
+  if (isOpen) resetForm()
 })
 
-const resetForm = () => {
-  if (props.mode === 'edit' && props.task) {
-    // Preencher com dados da task existente
+function defaultSolicitante(): string[] {
+  const name = props.currentUser?.nome_usuario
+  return name ? [name] : []
+}
+
+function resetForm() {
+  if (props.task) {
     formData.value = {
       titulo_task: props.task.titulo_task || '',
       descricao: props.task.descricao || '',
@@ -299,13 +296,14 @@ const resetForm = () => {
       data_fim: formatDateForInput(props.task.data_fim),
       subtask: props.task.subtask || [],
       subtask_bool: props.task.subtask_bool || [],
-      solicitante: props.task.solicitante || [],
+      solicitante: props.task.solicitante?.length
+        ? props.task.solicitante
+        : defaultSolicitante(),
       ganhos: props.task.ganhos || '',
       projeto: props.task.projeto || false,
       pos_s4hana: props.task.pos_s4hana || false
     }
   } else {
-    // Limpar formulário para nova task
     formData.value = {
       titulo_task: '',
       descricao: '',
@@ -318,7 +316,7 @@ const resetForm = () => {
       data_fim: null,
       subtask: [],
       subtask_bool: [],
-      solicitante: [],
+      solicitante: defaultSolicitante(),
       ganhos: '',
       projeto: false,
       pos_s4hana: false
@@ -326,24 +324,21 @@ const resetForm = () => {
   }
 }
 
-const formatDateForInput = (dateString: string | null): string | null => {
+function formatDateForInput(dateString: string | null): string | null {
   if (!dateString) return null
-  
   try {
-    const date = new Date(dateString)
-    return date.toISOString().slice(0, 16) // Format: YYYY-MM-DDTHH:mm
+    return new Date(dateString).toISOString().slice(0, 16)
   } catch {
     return null
   }
 }
 
-const closeModal = () => {
+function closeModal() {
   emit('close')
 }
 
-const handleSubmit = async () => {
+async function handleSubmit() {
   if (!isFormValid.value) return
-  
   loading.value = true
   try {
     emit('save', formData.value)
@@ -352,7 +347,7 @@ const handleSubmit = async () => {
   }
 }
 
-const handleDelete = () => {
+function handleDelete() {
   emit('delete')
 }
 </script>
@@ -360,10 +355,7 @@ const handleDelete = () => {
 <style scoped>
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
@@ -411,13 +403,9 @@ const handleDelete = () => {
   transition: background-color 0.2s;
 }
 
-.close-button:hover {
-  background-color: #f8f9fa;
-}
+.close-button:hover { background-color: #f8f9fa; }
 
-.task-form {
-  padding: 1.5rem;
-}
+.task-form { padding: 1.5rem; }
 
 .form-section {
   margin-bottom: 2rem;
@@ -425,9 +413,7 @@ const handleDelete = () => {
   border-bottom: 1px solid #f0f0f0;
 }
 
-.form-section:last-of-type {
-  border-bottom: none;
-}
+.form-section:last-of-type { border-bottom: none; }
 
 .form-section h3 {
   margin: 0 0 1rem 0;
@@ -436,9 +422,7 @@ const handleDelete = () => {
   font-weight: 600;
 }
 
-.form-group {
-  margin-bottom: 1rem;
-}
+.form-group { margin-bottom: 1rem; }
 
 .form-row {
   display: grid;
@@ -463,6 +447,7 @@ const handleDelete = () => {
   border-radius: 8px;
   font-size: 0.9rem;
   transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .form-group input[type="text"]:focus,
@@ -477,8 +462,12 @@ const handleDelete = () => {
   margin-top: 0.5rem;
 }
 
-.form-group input[type="checkbox"] {
-  margin-right: 0.5rem;
+.form-group input[type="checkbox"] { margin-right: 0.5rem; }
+
+.field-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #adb5bd;
 }
 
 .form-actions {
@@ -512,30 +501,12 @@ const handleDelete = () => {
   color: white;
 }
 
-.save-button:hover:not(:disabled) {
-  opacity: 0.9;
-}
+.save-button:hover:not(:disabled) { opacity: 0.9; }
+.save-button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.save-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.cancel-button { background-color: #6c757d; color: white; }
+.cancel-button:hover:not(:disabled) { background-color: #5a6268; }
 
-.cancel-button {
-  background-color: #6c757d;
-  color: white;
-}
-
-.cancel-button:hover:not(:disabled) {
-  background-color: #5a6268;
-}
-
-.delete-button {
-  background-color: #dc3545;
-  color: white;
-}
-
-.delete-button:hover:not(:disabled) {
-  background-color: #c82333;
-}
+.delete-button { background-color: #dc3545; color: white; }
+.delete-button:hover:not(:disabled) { background-color: #c82333; }
 </style>

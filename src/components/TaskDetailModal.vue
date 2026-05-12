@@ -133,8 +133,8 @@
         <div class="detail-row">
           <div class="detail-section">
             <label>Status:</label>
-            <span :class="['status-badge', { completed: task.status_concluido }]">
-              {{ task.status_concluido ? '✅ Concluído' : '⏳ Em andamento' }}
+            <span :class="['status-badge', statusClass]">
+              {{ statusLabel }}
             </span>
           </div>
           
@@ -161,11 +161,11 @@
 import { computed, onMounted } from 'vue'
 import { useMetadata } from '@/composables/useMetadata'
 import { usePermissions } from '@/composables/usePermissions'
-import type { Task } from '@/types/flowcheck'
+import type { Task, TaskWithContext } from '@/types/flowcheck'
 
 const props = defineProps<{
   isOpen: boolean
-  task: Task | null
+  task: Task | TaskWithContext | null
 }>()
 
 const emit = defineEmits<{
@@ -176,13 +176,11 @@ const emit = defineEmits<{
 const metadata = useMetadata()
 const permissions = usePermissions()
 
-// Verificar se pode editar esta task específica
 const canEditThisTask = computed(() => {
   if (!props.task) return false
   return permissions.canEditTask.value(props.task)
 })
 
-// Carregar metadados se necessário
 onMounted(() => {
   if (metadata.state.users.length === 0) {
     metadata.loadMetadata()
@@ -197,6 +195,28 @@ const responsaveis = computed(() => {
 const solicitantes = computed(() => {
   if (!props.task?.solicitante) return []
   return metadata.getUsersByNames(props.task.solicitante)
+})
+
+// Derive the real status label from categoryName (TaskWithContext) when available,
+// falling back to status_concluido for plain Task objects.
+const statusLabel = computed(() => {
+  if (!props.task) return ''
+  const ctx = props.task as TaskWithContext
+  if (ctx.categoryName) {
+    if (ctx.categoryName === 'Concluidos') return '✅ Concluído'
+    if (ctx.categoryName === 'Em Andamento') return '⚡ Em Andamento'
+    if (ctx.categoryName === 'Não Iniciado') return '🕐 Não Iniciado'
+    return ctx.categoryName
+  }
+  return props.task.status_concluido ? '✅ Concluído' : '⏳ Pendente'
+})
+
+const statusClass = computed(() => {
+  if (!props.task) return ''
+  const ctx = props.task as TaskWithContext
+  if (ctx.categoryName === 'Concluidos' || props.task.status_concluido) return 'completed'
+  if (ctx.categoryName === 'Em Andamento') return 'in-progress'
+  return 'not-started'
 })
 
 const closeModal = () => {
@@ -473,13 +493,23 @@ const getInitials = (name: string | null | undefined): string => {
 }
 
 .status-badge {
-  background-color: #fff3e0;
-  color: #ef6c00;
+  background-color: #f1f3f5;
+  color: #6c757d;
+}
+
+.status-badge.in-progress {
+  background-color: #fff3cd;
+  color: #b45309;
 }
 
 .status-badge.completed {
   background-color: #e8f5e8;
   color: #2e7d32;
+}
+
+.status-badge.not-started {
+  background-color: #f1f3f5;
+  color: #6c757d;
 }
 
 .type-badge {

@@ -38,6 +38,7 @@ export interface Task {
   pos_s4hana: boolean | null
   criado_por: string | null
   modificado_por: string | null
+  display_order: number | null
 }
 
 export interface TaskFormData {
@@ -56,6 +57,11 @@ export interface TaskFormData {
   ganhos: string
   projeto: boolean
   pos_s4hana: boolean
+}
+
+export interface TaskWithContext extends Task {
+  bucketName: string
+  categoryName: string
 }
 
 export interface FlowCheckState {

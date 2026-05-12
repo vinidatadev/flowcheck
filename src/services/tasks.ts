@@ -170,6 +170,17 @@ export class TasksService {
     }
   }
 
+  async updateDisplayOrder(updates: { id: number; display_order: number }[]): Promise<void> {
+    // Fire all updates in parallel — each is a single-row patch
+    const promises = updates.map(({ id, display_order }) =>
+      supabase.from('tasks').update({ display_order }).eq('id', id)
+    )
+    const results = await Promise.all(promises)
+    for (const { error } of results) {
+      if (error) throw new Error(`Erro ao salvar ordem: ${error.message}`)
+    }
+  }
+
   async deleteTask(taskId: number, userLevel: number): Promise<void> {
     // Validar permissão no frontend
     if (userLevel < 2) {

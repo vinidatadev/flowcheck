@@ -60,6 +60,78 @@
       </ul>
     </nav>
     
+    <!-- Assistente IA (todos os níveis) -->
+    <div class="report-section">
+      <div v-if="isOpen" class="nav-header">
+        <span class="nav-title">IA</span>
+      </div>
+
+      <ul class="admin-list">
+        <li
+          :class="['admin-item', { active: isOnAiAssistant }]"
+          @click="$emit('navigate-to-ai')"
+        >
+          <div v-if="isOpen" class="admin-expanded">
+            <div class="admin-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+                <path d="M12 8v4l3 3"/>
+                <circle cx="12" cy="12" r="1"/>
+              </svg>
+            </div>
+            <span class="admin-name">Assistente IA</span>
+          </div>
+
+          <div v-else class="admin-collapsed">
+            <div class="admin-icon-small" title="Assistente IA">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+                <path d="M12 8v4l3 3"/>
+                <circle cx="12" cy="12" r="1"/>
+              </svg>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Relatório / Dashboard (todos os níveis) -->
+    <div class="report-section">
+      <div v-if="isOpen" class="nav-header">
+        <span class="nav-title">RELATÓRIO</span>
+      </div>
+
+      <ul class="admin-list">
+        <li
+          :class="['admin-item', { active: isOnDashboard }]"
+          @click="$emit('navigate-to-dashboard')"
+        >
+          <div v-if="isOpen" class="admin-expanded">
+            <div class="admin-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </div>
+            <span class="admin-name">Relatório</span>
+          </div>
+
+          <div v-else class="admin-collapsed">
+            <div class="admin-icon-small" title="Relatório">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
     <!-- Seção de Administração (apenas nível 2) -->
     <div v-if="user?.nivel === 2" class="admin-section">
       <div v-if="isOpen" class="nav-header">
@@ -135,8 +207,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import type { User } from '@/types/user'
 import type { Bucket } from '@/types/flowcheck'
+
+const route = useRoute()
 
 const props = defineProps<{
   isOpen: boolean
@@ -151,7 +227,12 @@ defineEmits<{
   'logout': []
   'navigate-to-tags': []
   'navigate-to-users': []
+  'navigate-to-dashboard': []
+  'navigate-to-ai': []
 }>()
+
+const isOnDashboard = computed(() => route.path === '/dashboard')
+const isOnAiAssistant = computed(() => route.path === '/ai-assistant')
 
 const getFirstLetters = (text: string | null): string => {
   if (!text) return 'P'
@@ -461,6 +542,12 @@ const getLevelClass = (): string => {
   color: white;
 }
 
+/* Seção de relatório */
+.report-section {
+  padding: 16px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* Seção de administração */
 .admin-section {
   padding: 16px 0;
@@ -481,6 +568,20 @@ const getLevelClass = (): string => {
 
 .admin-item:hover {
   background-color: rgba(255, 255, 255, 0.04);
+}
+
+.admin-item.active {
+  background-color: rgba(102, 126, 234, 0.08);
+}
+
+.admin-item.active .admin-icon,
+.admin-item.active .admin-icon-small {
+  background: rgba(102, 126, 234, 0.2);
+  color: #a5b4fc;
+}
+
+.admin-item.active .admin-name {
+  color: #a5b4fc;
 }
 
 .admin-expanded {

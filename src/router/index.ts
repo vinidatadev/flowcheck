@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import HomeView from '@/views/HomeView.vue'
 import TagManagementView from '@/views/TagManagementView.vue'
 import UserManagementView from '@/views/UserManagementView.vue'
+import DashboardView from '@/views/DashboardView.vue'
 
 const routes = [
   {
@@ -33,6 +34,18 @@ const routes = [
     name: 'UserManagement',
     component: UserManagementView,
     meta: { requiresAuth: true, requiresLevel2: true }
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: DashboardView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/ai-assistant',
+    name: 'AiAssistant',
+    component: () => import('@/views/AiAssistantView.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

@@ -10,6 +10,8 @@
       @logout="handleLogout"
       @navigate-to-tags="navigateToTags"
       @navigate-to-users="navigateToUsers"
+      @navigate-to-dashboard="navigateToDashboard"
+      @navigate-to-ai="navigateToAi"
     />
     
     <main class="main-content" :class="{ 'sidebar-open': sidebar.sidebarOpen.value }">
@@ -54,6 +56,8 @@
         :is-open="showTaskForm"
         :mode="taskFormMode"
         :task="taskFormTask"
+        :current-user="auth.state.user"
+        :user-level="auth.state.user?.nivel"
         @close="closeTaskForm"
         @save="handleTaskSave"
         @delete="openDeleteConfirm"
@@ -88,7 +92,7 @@ import KanbanBoard from '@/components/KanbanBoard.vue'
 import TaskDetailModal from '@/components/TaskDetailModal.vue'
 import TaskForm from '@/components/TaskForm.vue'
 import TaskDeleteConfirm from '@/components/TaskDeleteConfirm.vue'
-import type { Task, TaskFormData } from '@/types/flowcheck'
+import type { Task, TaskFormData, TaskWithContext } from '@/types/flowcheck'
 
 const router = useRouter()
 const auth = useAuth()
@@ -99,7 +103,7 @@ const permissions = usePermissions()
 
 // Estados dos modais
 const showTaskDetail = ref(false)
-const selectedTask = ref<Task | null>(null)
+const selectedTask = ref<TaskWithContext | null>(null)
 
 const showTaskForm = ref(false)
 const taskFormMode = ref<'create' | 'edit'>('create')
@@ -125,9 +129,24 @@ const navigateToUsers = () => {
   router.push('/users')
 }
 
+const navigateToDashboard = () => {
+  router.push('/dashboard')
+}
+
+const navigateToAi = () => {
+  router.push('/ai-assistant')
+}
+
 // Gerenciamento de detalhes da task
 const openTaskDetail = (task: Task) => {
-  selectedTask.value = task
+  // Enrich with categoryName so TaskDetailModal shows the correct status
+  const category = flowcheck.state.categories.find(c => c.id === task.id_category)
+  const bucket = flowcheck.state.selectedBucket
+  selectedTask.value = {
+    ...task,
+    categoryName: category?.category ?? '',
+    bucketName: bucket?.abrev ?? bucket?.bucket ?? '',
+  }
   showTaskDetail.value = true
 }
 
