@@ -2,6 +2,7 @@ import { reactive, computed } from 'vue'
 import { dashboardService } from '@/services/dashboard'
 import { bucketsService } from '@/services/buckets'
 import { tasksService } from '@/services/tasks'
+import { useTaskFilters } from './useTaskFilters'
 import type { TaskWithContext, Bucket } from '@/types/flowcheck'
 
 interface DashboardState {
@@ -36,6 +37,8 @@ const filters = reactive<DashboardFilters>({
 })
 
 export function useDashboard() {
+  const { getFilteredTasks } = useTaskFilters()
+
   const filteredTasks = computed<TaskWithContext[]>(() => {
     let result = state.tasks
 
@@ -53,6 +56,9 @@ export function useDashboard() {
         t.responsavel && t.responsavel.some(r => filters.responsaveis.includes(r))
       )
     }
+
+    // Apply Standby visibility from useTaskFilters (shared state)
+    result = getFilteredTasks(result) as TaskWithContext[]
 
     // Sort: Em Andamento first, then Não Iniciado.
     // Within each group: by display_order (nulls last), then created_at asc.

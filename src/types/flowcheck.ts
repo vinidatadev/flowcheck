@@ -39,6 +39,7 @@ export interface Task {
   criado_por: string | null
   modificado_por: string | null
   display_order: number | null
+  id_obs_processo: number | null
 }
 
 export interface TaskFormData {
@@ -57,6 +58,13 @@ export interface TaskFormData {
   ganhos: string
   projeto: boolean
   pos_s4hana: boolean
+  id_obs_processo: number | null
+}
+
+export interface ObsProcesso {
+  id: number
+  created_at: string
+  observacao_processo: string | null
 }
 
 export interface TaskWithContext extends Task {

@@ -78,6 +78,7 @@
 
         <!-- Indicators -->
         <div class="indicators">
+          <span v-if="obsText" class="obs-badge" :title="obsText">{{ obsText }}</span>
           <span v-if="task.pos_s4hana" class="indicator" title="SAP S/4HANA">🔧</span>
         </div>
       </div>
@@ -134,6 +135,8 @@ function tagProcessoStyle(name: string) {
   const color = metadata.getTagProcessoColor(name)
   return color ? { backgroundColor: color + '22', color, borderColor: color + '55' } : {}
 }
+
+const obsText = computed(() => metadata.getObsProcessoText(props.task.id_obs_processo ?? null))
 </script>
 
 <style scoped>
@@ -334,4 +337,15 @@ function tagProcessoStyle(name: string) {
 }
 
 .indicator { font-size: 0.85rem; }
+
+.obs-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
 </style>

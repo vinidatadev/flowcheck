@@ -152,10 +152,14 @@
                 :disabled="loading"
               >
                 <option value="">Selecione o nível</option>
-                <option value="1">1 - Usuário Padrão</option>
+                <option value="1">1 - Usuário Padrão (TaskInbox)</option>
                 <option value="2">2 - Administrador</option>
                 <option value="3">3 - Gestor Visualizador</option>
                 <option value="4">4 - Gestor Ordenador</option>
+                <option value="5">5 - Usuário CA (Central de Atendimento)</option>
+                <option value="6">6 - Usuário PI (Planejamento Integrado)</option>
+                <option value="7">7 - Usuário PE (Planejamento Estratégico)</option>
+                <option value="8">8 - Usuário GP (Gestão de Processos)</option>
               </select>
               <div v-if="errors.nivel" class="error-message">{{ errors.nivel }}</div>
             </div>

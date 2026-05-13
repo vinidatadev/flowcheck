@@ -51,6 +51,7 @@
       </div>
       
       <div class="task-indicators">
+        <span v-if="obsText" class="obs-badge" :title="obsText">{{ obsText }}</span>
         <span v-if="task.projeto" class="indicator project" title="Projeto">📋</span>
         <span v-if="task.pos_s4hana" class="indicator s4hana" title="SAP S/4HANA">🔧</span>
       </div>
@@ -130,6 +131,8 @@ const visibleTags = computed(() => {
 const remainingTagsCount = computed(() => {
   return Math.max(0, allTags.value.length - 3)
 })
+
+const obsText = computed(() => metadata.getObsProcessoText(props.task.id_obs_processo ?? null))
 
 const handleDragStart = (event: DragEvent) => {
   if (!canMove.value) {
@@ -300,5 +303,19 @@ const handleDragEnd = () => {
 
 .indicator {
   font-size: 0.8rem;
+}
+
+.obs-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

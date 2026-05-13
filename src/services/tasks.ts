@@ -71,6 +71,7 @@ export class TasksService {
       ganhos: taskData.ganhos || null,
       projeto: taskData.projeto,
       pos_s4hana: taskData.pos_s4hana,
+      id_obs_processo: taskData.id_obs_processo ?? null,
       criado_por: userId,
       modificado_por: userId
     }
@@ -120,6 +121,7 @@ export class TasksService {
       ganhos: taskData.ganhos || null,
       projeto: taskData.projeto,
       pos_s4hana: taskData.pos_s4hana,
+      id_obs_processo: taskData.id_obs_processo ?? null,
       modificado_por: userId
     }
 

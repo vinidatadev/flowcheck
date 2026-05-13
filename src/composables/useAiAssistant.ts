@@ -103,8 +103,8 @@ function buildSystemPrompt(ctx: AiAssistantContext): string {
   const userNames = ctx.users.map(u => u.nome_usuario).filter(Boolean).join(', ') || 'nenhum'
   const tagNames = ctx.tags.map(t => t.tag).filter(Boolean).join(', ') || 'nenhuma'
   const tagProcessoNames = ctx.tagsProcesso.map(t => t.tag_processo).filter(Boolean).join(', ') || 'nenhuma'
-  // Levels 2, 3 and 4 can select a bucket; level 1 always uses TaskInbox
-  const canSelectBucket = (ctx.userLevel ?? 0) >= 2
+  // Levels 2, 3 and 4 can select a bucket; restricted levels use their own bucket
+  const canSelectBucket = (ctx.userLevel ?? 0) >= 2 && ![5, 6, 7, 8].includes(ctx.userLevel ?? 0)
   const bucketOptions = canSelectBucket
     ? ctx.buckets.map(b => `${b.id}:${b.bucket}`).filter(Boolean).join(', ')
     : ''
@@ -286,6 +286,7 @@ export function useAiAssistant(ctx: AiAssistantContext) {
       subtask_bool: [],
       solicitante: [],
       pos_s4hana: false,
+      id_obs_processo: null,
     }
   }
 

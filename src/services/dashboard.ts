@@ -5,12 +5,17 @@ import { categoriesService } from './categories'
 
 const ACTIVE_CATEGORIES = ['Não Iniciado', 'Em Andamento']
 
+// Levels that only see their own bucket's "Não Iniciado",
+// but see "Em Andamento" from all buckets.
+const RESTRICTED_LEVELS = [1, 5, 6, 7, 8]
+
 export class DashboardService {
   async getAllActiveTasks(userLevel: number): Promise<TaskWithContext[]> {
-    // Level 1: fetch "Em Andamento" from ALL buckets + "Não Iniciado" only from TaskInbox.
-    // Level 2: fetch both statuses from all buckets.
+    const isRestricted = RESTRICTED_LEVELS.includes(userLevel)
+
     const ownBuckets = await bucketsService.getBucketsByUserLevel(userLevel)
-    const allBuckets = userLevel === 1
+    // Restricted levels see "Em Andamento" from all buckets
+    const allBuckets = isRestricted
       ? await bucketsService.getBucketsByUserLevel(2)
       : ownBuckets
 
@@ -29,9 +34,8 @@ export class DashboardService {
           .filter((task) => {
             const categoryName = task.id_category ? categoryMap.get(task.id_category) : null
             if (!categoryName || !ACTIVE_CATEGORIES.includes(categoryName)) return false
-            // Level 1: only show "Não Iniciado" from their own bucket (TaskInbox);
-            // "Em Andamento" is visible from any bucket.
-            if (userLevel === 1 && categoryName === 'Não Iniciado' && !isOwnBucket) return false
+            // Restricted levels: only show "Não Iniciado" from their own bucket
+            if (isRestricted && categoryName === 'Não Iniciado' && !isOwnBucket) return false
             return true
           })
           .map((task): TaskWithContext => ({

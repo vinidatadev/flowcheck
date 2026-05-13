@@ -175,6 +175,25 @@
               </label>
             </div>
           </div>
+
+          <div class="form-group">
+            <label for="obs_processo">Observação de Processo</label>
+            <select
+              id="obs_processo"
+              v-model="formData.id_obs_processo"
+              class="form-select"
+              :disabled="loading"
+            >
+              <option :value="null">— Nenhuma —</option>
+              <option
+                v-for="obs in metadata.state.obsProcesso"
+                :key="obs.id"
+                :value="obs.id"
+              >
+                {{ obs.observacao_processo }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <!-- ── Ações ── -->
@@ -250,7 +269,8 @@ const formData = ref<TaskFormData>({
   solicitante: [],
   ganhos: '',
   projeto: false,
-  pos_s4hana: false
+  pos_s4hana: false,
+  id_obs_processo: null,
 })
 
 const tagOptions = computed(() =>
@@ -301,7 +321,8 @@ function resetForm() {
         : defaultSolicitante(),
       ganhos: props.task.ganhos || '',
       projeto: props.task.projeto || false,
-      pos_s4hana: props.task.pos_s4hana || false
+      pos_s4hana: props.task.pos_s4hana || false,
+      id_obs_processo: props.task.id_obs_processo ?? null,
     }
   } else {
     formData.value = {
@@ -319,7 +340,8 @@ function resetForm() {
       solicitante: defaultSolicitante(),
       ganhos: '',
       projeto: false,
-      pos_s4hana: false
+      pos_s4hana: false,
+      id_obs_processo: null,
     }
   }
 }
@@ -463,6 +485,22 @@ function handleDelete() {
 }
 
 .form-group input[type="checkbox"] { margin-right: 0.5rem; }
+
+.form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
 
 .field-hint {
   margin: 0.35rem 0 0;

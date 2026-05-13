@@ -29,6 +29,15 @@
           </div>
         </div>
         <div class="header-actions">
+          <button
+            v-if="permissions.isAdmin.value"
+            @click="taskFilters.toggleStandby()"
+            class="standby-button"
+            :class="{ active: taskFilters.showStandby.value }"
+            :title="taskFilters.showStandby.value ? 'Ocultar tasks Standby' : 'Mostrar tasks Standby'"
+          >
+            {{ taskFilters.showStandby.value ? '🔕 Ocultar Standby' : '⏸️ Mostrar Standby' }}
+          </button>
           <button 
             v-if="permissions.canCreateTask.value"
             @click="$emit('new-task')" 
@@ -85,7 +94,8 @@ defineEmits<{
 }>()
 
 const permissions = usePermissions()
-const { hasActiveFilters } = useTaskFilters()
+const taskFilters = useTaskFilters()
+const { hasActiveFilters } = taskFilters
 </script>
 
 <style scoped>
@@ -145,7 +155,8 @@ const { hasActiveFilters } = useTaskFilters()
 }
 
 .new-task-button,
-.refresh-button {
+.refresh-button,
+.standby-button {
   padding: 0.5rem 1rem;
   border: none;
   border-radius: 6px;
@@ -153,6 +164,22 @@ const { hasActiveFilters } = useTaskFilters()
   font-size: 0.9rem;
   font-weight: 500;
   transition: background-color 0.2s;
+}
+
+.standby-button {
+  background-color: #e9ecef;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.standby-button:hover {
+  background-color: #dee2e6;
+}
+
+.standby-button.active {
+  background-color: #fff3cd;
+  color: #856404;
+  border-color: #ffc107;
 }
 
 .new-task-button {

@@ -23,6 +23,14 @@
         </div>
         <div class="header-actions">
           <button
+            v-if="permissions.isAdmin.value"
+            @click="taskFilters.toggleStandby()"
+            class="standby-button"
+            :class="{ 'standby-active': taskFilters.showStandby.value }"
+          >
+            {{ taskFilters.showStandby.value ? '🔕 Ocultar Standby' : '⏸️ Mostrar Standby' }}
+          </button>
+          <button
             class="refresh-button"
             :disabled="dashboard.state.loading"
             @click="reload"
@@ -189,6 +197,7 @@ import { useDashboard } from '@/composables/useDashboard'
 import { useSidebar } from '@/composables/useSidebar'
 import { useMetadata } from '@/composables/useMetadata'
 import { usePermissions } from '@/composables/usePermissions'
+import { useTaskFilters } from '@/composables/useTaskFilters'
 import draggable from 'vuedraggable'
 import Sidebar from '@/components/Sidebar.vue'
 import DashboardKpiCard from '@/components/DashboardKpiCard.vue'
@@ -207,6 +216,7 @@ const metadata = useMetadata()
 
 const permissions = usePermissions()
 const isLevel2 = computed(() => permissions.canReorderDashboard.value)
+const taskFilters = useTaskFilters()
 
 // Split filtered tasks into two groups for rendering
 const inProgressTasks = computed(() =>
@@ -321,6 +331,26 @@ onMounted(() => {
 .refresh-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.standby-button {
+  padding: 0.5rem 1rem;
+  background-color: #e9ecef;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.standby-button:hover { background-color: #dee2e6; }
+
+.standby-button.standby-active {
+  background-color: #fff3cd;
+  color: #856404;
+  border-color: #ffc107;
 }
 
 /* Body */

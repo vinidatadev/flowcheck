@@ -264,6 +264,10 @@ const getLevelText = (): string => {
     case 2: return 'Admin'
     case 3: return 'Gestor'
     case 4: return 'Gestor+'
+    case 5: return 'CA'
+    case 6: return 'PI'
+    case 7: return 'PE'
+    case 8: return 'GP'
     case 1: return 'User'
     default: return 'Guest'
   }
@@ -275,7 +279,11 @@ const getLevelClass = (): string => {
     case 2: return 'level-admin'
     case 3:
     case 4: return 'level-gestor'
-    case 1: return 'level-restricted'
+    case 1:
+    case 5:
+    case 6:
+    case 7:
+    case 8: return 'level-restricted'
     default: return 'level-undefined'
   }
 }

@@ -1,13 +1,16 @@
 import { ref, reactive } from 'vue'
 import { usersService } from '@/services/users'
 import { tagsService } from '@/services/tags'
+import { obsProcessoService } from '@/services/obsProcesso'
 import type { User } from '@/types/user'
 import type { Tag, TagProcesso } from '@/services/tags'
+import type { ObsProcesso } from '@/types/flowcheck'
 
 interface MetadataState {
   users: User[]
   tags: Tag[]
   tagsProcesso: TagProcesso[]
+  obsProcesso: ObsProcesso[]
   loading: boolean
   error: string | null
 }
@@ -16,6 +19,7 @@ const state = reactive<MetadataState>({
   users: [],
   tags: [],
   tagsProcesso: [],
+  obsProcesso: [],
   loading: false,
   error: null
 })
@@ -30,15 +34,17 @@ export function useMetadata() {
       state.loading = true
       state.error = null
 
-      const [users, tags, tagsProcesso] = await Promise.all([
+      const [users, tags, tagsProcesso, obsProcesso] = await Promise.all([
         usersService.getUsers(),
         tagsService.getTags(),
-        tagsService.getTagsProcesso()
+        tagsService.getTagsProcesso(),
+        obsProcessoService.getAll(),
       ])
 
       state.users = users
       state.tags = tags
       state.tagsProcesso = tagsProcesso
+      state.obsProcesso = obsProcesso
       loaded.value = true
     } catch (error) {
       state.error = error instanceof Error ? error.message : 'Erro ao carregar metadados'
@@ -69,6 +75,11 @@ export function useMetadata() {
     return tag?.color || null
   }
 
+  const getObsProcessoText = (id: number | null): string | null => {
+    if (!id) return null
+    return state.obsProcesso.find(o => o.id === id)?.observacao_processo ?? null
+  }
+
   return {
     state,
     loadMetadata,
@@ -76,6 +87,7 @@ export function useMetadata() {
     getTagsByNames,
     getTagsProcessoByNames,
     getTagColor,
-    getTagProcessoColor
-  }
-}
+    getTagProcessoColor,
+    getObsProcessoText,
+  }}
+
