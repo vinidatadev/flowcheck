@@ -13,7 +13,7 @@ defineProps<{
   label: string
   value: number | string
   icon: string
-  color: 'blue' | 'orange' | 'gray' | 'red' | 'green'
+  color: 'blue' | 'orange' | 'gray' | 'red' | 'green' | 'purple'
 }>()
 </script>
 
@@ -91,5 +91,12 @@ defineProps<{
 }
 .kpi-card--green .kpi-card__value {
   color: #28a745;
+}
+
+.kpi-card--purple {
+  border-left-color: #764ba2;
+}
+.kpi-card--purple .kpi-card__value {
+  color: #764ba2;
 }
 </style>

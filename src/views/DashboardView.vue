@@ -58,6 +58,12 @@
           <!-- KPI Cards (req 3.1–3.5) -->
           <div class="kpi-row">
             <DashboardKpiCard
+              label="Total Geral"
+              :value="dashboard.totalCount.value"
+              icon="📊"
+              color="purple"
+            />
+            <DashboardKpiCard
               label="Total Pendente"
               :value="dashboard.kpis.value.total"
               icon="📋"
@@ -82,9 +88,9 @@
               color="red"
             />
             <DashboardKpiCard
-              label="Média Progresso"
-              :value="`${dashboard.kpis.value.mediaProgresso}%`"
-              icon="📈"
+              label="Concluídos"
+              :value="dashboard.concluidosCount.value"
+              icon="✅"
               color="green"
             />
           </div>

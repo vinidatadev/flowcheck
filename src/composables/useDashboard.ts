@@ -1,5 +1,5 @@
-import { reactive, computed } from 'vue'
-import { dashboardService } from '@/services/dashboard'
+import { reactive, computed, ref, watch } from 'vue'
+import { dashboardService, getTotalTaskCount } from '@/services/dashboard'
 import { bucketsService } from '@/services/buckets'
 import { tasksService } from '@/services/tasks'
 import { useTaskFilters } from './useTaskFilters'
@@ -30,6 +30,10 @@ const state = reactive<DashboardState>({
   error: null
 })
 
+const totalCount = ref(0)
+const concluidosCount = ref(0)
+const lastUserLevel = ref(0)
+
 const filters = reactive<DashboardFilters>({
   bucketIds: [],
   status: 'all',
@@ -37,7 +41,7 @@ const filters = reactive<DashboardFilters>({
 })
 
 export function useDashboard() {
-  const { getFilteredTasks } = useTaskFilters()
+  const { getFilteredTasks, showStandby } = useTaskFilters()
 
   const filteredTasks = computed<TaskWithContext[]>(() => {
     let result = state.tasks
@@ -78,9 +82,12 @@ export function useDashboard() {
 
   const kpis = computed(() => {
     const tasks = filteredTasks.value
-    const emAndamento = tasks.filter(t => t.categoryName === 'Em Andamento')
-    const naoIniciado = tasks.filter(t => t.categoryName === 'Não Iniciado')
-    const altaPrioridade = tasks.filter(t => t.prioridade === true)
+    // Filtrar apenas tasks não concluídas para contagens de pendência
+    const tarefasPendentes = tasks.filter(t => !t.status_concluido)
+    
+    const emAndamento = tarefasPendentes.filter(t => t.categoryName === 'Em Andamento')
+    const naoIniciado = tarefasPendentes.filter(t => t.categoryName === 'Não Iniciado')
+    const altaPrioridade = tarefasPendentes.filter(t => t.prioridade === true)
 
     const progressValues = emAndamento.map(t => t.percenti_concluido ?? 0)
     const mediaProgresso = progressValues.length > 0
@@ -88,13 +95,16 @@ export function useDashboard() {
       : 0
 
     return {
-      total: tasks.length,
+      total: tarefasPendentes.length,
       emAndamento: emAndamento.length,
       naoIniciado: naoIniciado.length,
       altaPrioridade: altaPrioridade.length,
       mediaProgresso
     }
   })
+
+  // totalCount and concluidosCount come from the DB query (includes all statuses)
+  // and are kept in sync with the standby toggle via the watcher below.
 
   const hasActiveFilters = computed(() =>
     filters.bucketIds.length > 0 ||
@@ -107,13 +117,17 @@ export function useDashboard() {
       state.loading = true
       state.error = null
 
-      const [tasks, buckets] = await Promise.all([
+      const [tasks, buckets, total] = await Promise.all([
         dashboardService.getAllActiveTasks(userLevel),
-        bucketsService.getBucketsByUserLevel(userLevel)
+        bucketsService.getBucketsByUserLevel(userLevel),
+        getTotalTaskCount(userLevel, showStandby.value),
       ])
 
       state.tasks = tasks
       state.buckets = buckets
+      totalCount.value = total.total
+      concluidosCount.value = total.concluidos
+      lastUserLevel.value = userLevel
     } catch (error) {
       state.error = error instanceof Error ? error.message : 'Erro ao carregar dados do dashboard'
     } finally {
@@ -140,6 +154,18 @@ export function useDashboard() {
     await tasksService.updateDisplayOrder(updates)
   }
 
+  // Re-fetch counts when standby visibility changes
+  watch(showStandby, async () => {
+    if (lastUserLevel.value === 0) return
+    try {
+      const total = await getTotalTaskCount(lastUserLevel.value, showStandby.value)
+      totalCount.value = total.total
+      concluidosCount.value = total.concluidos
+    } catch (e) {
+      console.error('Erro ao atualizar contagens:', e)
+    }
+  })
+
   const setFilters = (newFilters: Partial<DashboardFilters>) => {
     if (newFilters.bucketIds !== undefined) filters.bucketIds = newFilters.bucketIds
     if (newFilters.status !== undefined) filters.status = newFilters.status
@@ -157,6 +183,8 @@ export function useDashboard() {
     filters,
     filteredTasks,
     kpis,
+    totalCount,
+    concluidosCount,
     hasActiveFilters,
     loadAllTasks,
     reorderTasks,
