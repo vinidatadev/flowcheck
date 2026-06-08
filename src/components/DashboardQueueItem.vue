@@ -41,7 +41,28 @@
         >{{ tp }}</span>
       </div>
 
-      <!-- Row 3: people + progress + dates -->
+      <!-- Row 3: subtasks -->
+      <div v-if="hasSubtasks" class="subtasks-preview">
+        <div class="subtasks-header">
+          <span class="subtasks-icon">📋</span>
+          <span class="subtasks-title">Subtasks ({{ completedCount }}/{{ totalSubtasks }})</span>
+        </div>
+        <div class="subtasks-list">
+          <div
+            v-for="(subtask, index) in task.subtask"
+            :key="index"
+            class="subtask-preview-item"
+            :class="{ 'subtask-completed': task.subtask_bool?.[index] }"
+          >
+            <span class="subtask-checkbox">
+              {{ task.subtask_bool?.[index] ? '✅' : '⬜' }}
+            </span>
+            <span class="subtask-text">{{ subtask }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4: people + progress + dates -->
       <div class="item-footer">
         <!-- Responsáveis -->
         <div class="people-group">
@@ -111,6 +132,14 @@ const solicitantes = computed(() =>
 
 const hasTags = computed(() =>
   (props.task.tag?.length ?? 0) > 0 || (props.task.tag_processo?.length ?? 0) > 0
+)
+
+const hasSubtasks = computed(() => (props.task.subtask?.length ?? 0) > 0)
+
+const totalSubtasks = computed(() => props.task.subtask?.length ?? 0)
+
+const completedCount = computed(() => 
+  props.task.subtask_bool?.filter(bool => bool === true).length ?? 0
 )
 
 function formatDate(d: string | null): string {
@@ -240,7 +269,79 @@ const obsText = computed(() => metadata.getObsProcessoText(props.task.id_obs_pro
   white-space: nowrap;
 }
 
-/* ── Row 3: footer ── */
+/* ── Row 3: subtasks preview ── */
+.subtasks-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+}
+
+.subtasks-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.subtasks-icon {
+  font-size: 0.75rem;
+}
+
+.subtasks-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.subtasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.subtask-preview-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.subtask-preview-item:hover {
+  background: #f8f9fa;
+}
+
+.subtask-preview-item.subtask-completed {
+  opacity: 0.7;
+}
+
+.subtask-preview-item.subtask-completed .subtask-text {
+  text-decoration: line-through;
+  color: #6c757d;
+}
+
+.subtask-checkbox {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.subtask-text {
+  font-size: 0.75rem;
+  color: #333;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* ── Row 4: footer ── */
 .item-footer {
   display: flex;
   align-items: center;
