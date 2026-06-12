@@ -43,11 +43,20 @@
 
       <!-- Row 3: subtasks -->
       <div v-if="hasSubtasks" class="subtasks-preview">
-        <div class="subtasks-header">
+        <div 
+          class="subtasks-header" 
+          @click.stop="toggleSubtasks"
+        >
           <span class="subtasks-icon">📋</span>
           <span class="subtasks-title">Subtasks ({{ completedCount }}/{{ totalSubtasks }})</span>
+          <span class="expand-icon" :class="{ 'expanded': subtasksExpanded }">
+            {{ subtasksExpanded ? '▼' : '▶' }}
+          </span>
         </div>
-        <div class="subtasks-list">
+        <div 
+          v-if="subtasksExpanded" 
+          class="subtasks-list"
+        >
           <div
             v-for="(subtask, index) in task.subtask"
             :key="index"
@@ -108,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AvatarGroup from './AvatarGroup.vue'
 import { useMetadata } from '@/composables/useMetadata'
 import type { TaskWithContext } from '@/types/flowcheck'
@@ -117,6 +126,13 @@ const props = defineProps<{ task: TaskWithContext }>()
 defineEmits<{ click: [task: TaskWithContext] }>()
 
 const metadata = useMetadata()
+
+// Estado do colapso das subtasks (fechado por padrão)
+const subtasksExpanded = ref(false)
+
+const toggleSubtasks = () => {
+  subtasksExpanded.value = !subtasksExpanded.value
+}
 
 onMounted(() => {
   if (metadata.state.users.length === 0) metadata.loadMetadata()
@@ -284,6 +300,26 @@ const obsText = computed(() => metadata.getObsProcessoText(props.task.id_obs_pro
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.subtasks-header:hover {
+  background-color: #e9ecef;
+}
+
+.expand-icon {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: #6c757d;
+  transition: transform 0.2s;
+  user-select: none;
+}
+
+.expand-icon.expanded {
+  transform: rotate(0deg);
 }
 
 .subtasks-icon {
