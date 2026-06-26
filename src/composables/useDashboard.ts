@@ -1,5 +1,5 @@
-import { reactive, computed, ref, watch } from 'vue'
-import { dashboardService, getTotalTaskCount } from '@/services/dashboard'
+import { reactive, computed, ref } from 'vue'
+import { dashboardService } from '@/services/dashboard'
 import { bucketsService } from '@/services/buckets'
 import { tasksService } from '@/services/tasks'
 import { useTaskFilters } from './useTaskFilters'
@@ -30,8 +30,7 @@ const state = reactive<DashboardState>({
   error: null
 })
 
-const totalCount = ref(0)
-const concluidosCount = ref(0)
+const allTasks = ref<TaskWithContext[]>([])
 const lastUserLevel = ref(0)
 
 const filters = reactive<DashboardFilters>({
@@ -103,8 +102,30 @@ export function useDashboard() {
     }
   })
 
-  // totalCount and concluidosCount come from the DB query (includes all statuses)
-  // and are kept in sync with the standby toggle via the watcher below.
+  // filteredAllTasks: applies the same bucket/status/responsavel/standby filters
+  // but over ALL tasks (including concluídos) so totalCount and concluidosCount
+  // react to filter changes instead of always showing the global DB value.
+  const filteredAllTasks = computed<TaskWithContext[]>(() => {
+    let result = allTasks.value
+
+    if (filters.bucketIds.length > 0) {
+      result = result.filter(t => t.id_bucket !== null && filters.bucketIds.includes(t.id_bucket))
+    }
+
+    if (filters.responsaveis.length > 0) {
+      result = result.filter(t =>
+        t.responsavel && t.responsavel.some(r => filters.responsaveis.includes(r))
+      )
+    }
+
+    return getFilteredTasks(result) as TaskWithContext[]
+  })
+
+  const totalCount = computed(() => filteredAllTasks.value.length)
+
+  const concluidosCount = computed(() =>
+    filteredAllTasks.value.filter(t => t.status_concluido).length
+  )
 
   const hasActiveFilters = computed(() =>
     filters.bucketIds.length > 0 ||
@@ -117,16 +138,15 @@ export function useDashboard() {
       state.loading = true
       state.error = null
 
-      const [tasks, buckets, total] = await Promise.all([
+      const [tasks, allTasksData, buckets] = await Promise.all([
         dashboardService.getAllActiveTasks(userLevel),
+        dashboardService.getAllTasksWithContext(userLevel),
         bucketsService.getBucketsByUserLevel(userLevel),
-        getTotalTaskCount(userLevel, showStandby.value),
       ])
 
       state.tasks = tasks
+      allTasks.value = allTasksData
       state.buckets = buckets
-      totalCount.value = total.total
-      concluidosCount.value = total.concluidos
       lastUserLevel.value = userLevel
     } catch (error) {
       state.error = error instanceof Error ? error.message : 'Erro ao carregar dados do dashboard'
@@ -153,18 +173,6 @@ export function useDashboard() {
     const updates = orderedIds.map((id, i) => ({ id, display_order: i + 1 }))
     await tasksService.updateDisplayOrder(updates)
   }
-
-  // Re-fetch counts when standby visibility changes
-  watch(showStandby, async () => {
-    if (lastUserLevel.value === 0) return
-    try {
-      const total = await getTotalTaskCount(lastUserLevel.value, showStandby.value)
-      totalCount.value = total.total
-      concluidosCount.value = total.concluidos
-    } catch (e) {
-      console.error('Erro ao atualizar contagens:', e)
-    }
-  })
 
   const setFilters = (newFilters: Partial<DashboardFilters>) => {
     if (newFilters.bucketIds !== undefined) filters.bucketIds = newFilters.bucketIds

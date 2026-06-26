@@ -15,6 +15,35 @@ const ACTIVE_CATEGORIES = ['Não Iniciado', 'Em Andamento']
 const RESTRICTED_LEVELS = [1, 5, 6, 7, 8]
 
 export class DashboardService {
+  async getAllTasksWithContext(userLevel: number): Promise<TaskWithContext[]> {
+    const ownBuckets = await bucketsService.getBucketsByUserLevel(userLevel)
+
+    const results = await Promise.allSettled(
+      ownBuckets.map(async (bucket) => {
+        const [tasks, categories] = await Promise.all([
+          tasksService.getTasksByBucket(bucket.id),
+          categoriesService.getCategoriesByBucket(bucket.id)
+        ])
+
+        const categoryMap = new Map(categories.map((c) => [c.id, c.category ?? '']))
+
+        return tasks.map((task): TaskWithContext => ({
+          ...task,
+          bucketName: bucket.abrev ?? bucket.bucket ?? String(bucket.id),
+          categoryName: task.id_category ? (categoryMap.get(task.id_category) ?? '') : ''
+        }))
+      })
+    )
+
+    const allTasks: TaskWithContext[] = []
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        allTasks.push(...result.value)
+      }
+    }
+    return allTasks
+  }
+
   async getAllActiveTasks(userLevel: number): Promise<TaskWithContext[]> {
     const isRestricted = RESTRICTED_LEVELS.includes(userLevel)
 
