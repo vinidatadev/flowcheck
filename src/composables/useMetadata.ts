@@ -57,6 +57,10 @@ export function useMetadata() {
     return state.users.filter(user => names.includes(user.nome_usuario || ''))
   }
 
+  const getUserById = (id: string): User | null => {
+    return state.users.find(user => user.id_user === id) ?? null
+  }
+
   const getTagsByNames = (names: string[]): Tag[] => {
     return state.tags.filter(tag => names.includes(tag.tag || ''))
   }
@@ -84,6 +88,7 @@ export function useMetadata() {
     state,
     loadMetadata,
     getUsersByNames,
+    getUserById,
     getTagsByNames,
     getTagsProcessoByNames,
     getTagColor,

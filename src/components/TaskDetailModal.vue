@@ -116,9 +116,28 @@
           </div>
         </div>
         
-        <div class="detail-section">
-          <label>Criado em:</label>
-          <p>{{ formatDate(task.created_at) }}</p>
+        <div class="detail-row">
+          <div class="detail-section">
+            <label>Criado em:</label>
+            <p>{{ formatDate(task.created_at) }}</p>
+          </div>
+          <div v-if="criador" class="detail-section">
+            <label>Criado por:</label>
+            <div class="user-item creator-item">
+              <div class="user-avatar">
+                <img v-if="criador.foto" :src="criador.foto" :alt="criador.nome_usuario || 'Usuário'" />
+                <div v-else class="avatar-placeholder">{{ getInitials(criador.nome_usuario) }}</div>
+              </div>
+              <div class="user-info">
+                <span class="user-name">{{ criador.nome_usuario }}</span>
+                <span v-if="criador.cargo" class="user-role">{{ criador.cargo }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="task.criado_por" class="detail-section">
+            <label>Criado por:</label>
+            <p>{{ task.criado_por }}</p>
+          </div>
         </div>
 
         <!-- ── Seção de Comentários ── -->
@@ -456,6 +475,11 @@ const solicitantes = computed(() => {
   return metadata.getUsersByNames(props.task.solicitante)
 })
 
+const criador = computed(() => {
+  if (!props.task?.criado_por) return null
+  return metadata.getUserById(props.task.criado_por) ?? null
+})
+
 const sortedComments = computed((): TaskComment[] => {
   const raw = props.task?.comentarios
   if (!raw || !Array.isArray(raw)) return []
@@ -672,6 +696,13 @@ const getInitials = (name: string | null | undefined): string => {
 .user-info { display: flex; flex-direction: column; }
 .user-name { font-weight: 500; color: #333; font-size: 0.9rem; }
 .user-role { color: #666; font-size: 0.8rem; }
+
+.creator-item {
+  padding: 0.5rem 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
 
 .tag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
