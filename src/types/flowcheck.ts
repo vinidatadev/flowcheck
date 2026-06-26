@@ -14,6 +14,22 @@ export interface Category {
   id_bucket: number | null
 }
 
+export interface TaskCommentAttachment {
+  nome: string        // nome original do arquivo
+  url: string         // URL pública no Storage
+  tipo: string        // MIME type
+  tamanho: number     // bytes
+}
+
+export interface TaskComment {
+  id: string            // uuid gerado no cliente
+  texto: string
+  autor_nome: string
+  autor_foto: string | null
+  criado_em: string     // ISO timestamp
+  anexos?: TaskCommentAttachment[]
+}
+
 export interface Task {
   id: number
   created_at: string
@@ -31,7 +47,7 @@ export interface Task {
   subtask: string[] | null
   subtask_bool: boolean[] | null
   solicitante: string[] | null
-  comentarios: string[] | null
+  comentarios: TaskComment[] | null
   percenti_concluido: number | null
   ganhos: string | null
   projeto: boolean | null

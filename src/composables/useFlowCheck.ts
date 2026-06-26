@@ -159,6 +159,14 @@ export function useFlowCheck() {
     }
   }
 
+  // Atualiza uma task já existente na lista local (ex: após adicionar comentário)
+  const patchLocalTask = (updatedTask: Task) => {
+    const index = state.tasks.findIndex(t => t.id === updatedTask.id)
+    if (index !== -1) {
+      state.tasks[index] = updatedTask
+    }
+  }
+
   const removeTask = async (taskId: number, userLevel: number): Promise<void> => {
     try {
       await tasksService.deleteTask(taskId, userLevel)
@@ -202,6 +210,7 @@ export function useFlowCheck() {
     moveTask,
     addTask,
     updateTask,
+    patchLocalTask,
     removeTask,
     orderedCategories,
     filteredTasksCount,

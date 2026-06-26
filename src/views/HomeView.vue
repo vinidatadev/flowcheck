@@ -50,6 +50,7 @@
         :task="selectedTask"
         @close="closeTaskDetail"
         @edit="openTaskEditForm"
+        @comment-added="handleCommentAdded"
       />
       
       <!-- Modal de formulário da task -->
@@ -269,8 +270,21 @@ const handleTaskDelete = async () => {
   }
 }
 
-const handleTaskDrop = async (taskId: number, categoryId: number) => {
-  try {
+const handleCommentAdded = (updatedTask: Task) => {
+  flowcheck.patchLocalTask(updatedTask)
+  // Atualizar a task selecionada no modal também
+  if (selectedTask.value && selectedTask.value.id === updatedTask.id) {
+    const category = flowcheck.state.categories.find(c => c.id === updatedTask.id_category)
+    const bucket = flowcheck.state.selectedBucket
+    selectedTask.value = {
+      ...updatedTask,
+      categoryName: category?.category ?? '',
+      bucketName: bucket?.abrev ?? bucket?.bucket ?? '',
+    }
+  }
+}
+
+const handleTaskDrop = async (taskId: number, categoryId: number) => {  try {
     const userLevel = auth.state.user?.nivel || 0
     await flowcheck.moveTask(taskId, categoryId, userLevel)
     showToast('Task movida com sucesso!', 'success')

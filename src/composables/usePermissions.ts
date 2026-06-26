@@ -30,6 +30,14 @@ export function usePermissions() {
     }
   })
 
+  // Mesma regra de edição: admin comenta em tudo, demais só nas que criaram
+  const canCommentTask = computed(() => {
+    return (task: Task) => {
+      if (userLevel.value === 2) return true
+      return task.criado_por === currentUserId.value
+    }
+  })
+
   const canMoveTask = computed(() => userLevel.value === 2)
   const canDeleteTask = computed(() => userLevel.value === 2)
   const canReorderDashboard = computed(() => userLevel.value === 2 || userLevel.value === 4)
@@ -47,6 +55,7 @@ export function usePermissions() {
     currentUserId,
     canCreateTask,
     canEditTask,
+    canCommentTask,
     canMoveTask,
     canDeleteTask,
     canReorderDashboard,

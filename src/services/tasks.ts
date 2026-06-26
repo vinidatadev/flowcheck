@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Task, TaskFormData } from '@/types/flowcheck'
+import type { Task, TaskFormData, TaskComment } from '@/types/flowcheck'
 
 export class TasksService {
   async getTasksByBucket(bucketId: number): Promise<Task[]> {
@@ -183,8 +183,24 @@ export class TasksService {
     }
   }
 
-  async deleteTask(taskId: number, userLevel: number): Promise<void> {
-    // Validar permissão no frontend
+  async addComment(taskId: number, comment: TaskComment, existingComments: TaskComment[]): Promise<Task> {
+    const updated = [...existingComments, comment]
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ comentarios: updated })
+      .eq('id', taskId)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Erro ao salvar comentário: ${error.message}`)
+    }
+
+    return data
+  }
+
+  async deleteTask(taskId: number, userLevel: number): Promise<void> {    // Validar permissão no frontend
     if (userLevel < 2) {
       throw new Error('Você não tem permissão para excluir tasks')
     }
