@@ -103,6 +103,8 @@ import TaskForm from '@/components/TaskForm.vue'
 import TaskDeleteConfirm from '@/components/TaskDeleteConfirm.vue'
 import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
 import { authService } from '@/services/auth'
+import { uploadTaskAttachments } from '@/services/attachments'
+import { tasksService } from '@/services/tasks'
 import type { Task, TaskFormData, TaskWithContext } from '@/types/flowcheck'
 
 const router = useRouter()
@@ -215,7 +217,7 @@ const closeDeleteConfirm = () => {
 }
 
 // Operações CRUD
-const handleTaskSave = async (taskData: TaskFormData) => {
+const handleTaskSave = async (taskData: TaskFormData, files: File[] = []) => {
   try {
     const userId = auth.state.user?.id_user
     const userLevel = auth.state.user?.nivel || 0
@@ -225,10 +227,24 @@ const handleTaskSave = async (taskData: TaskFormData) => {
     }
 
     if (taskFormMode.value === 'create') {
-      await flowcheck.addTask(taskData, userId, userLevel)
+      const newTask = await flowcheck.addTask(taskData, userId, userLevel)
+      // Upload dos anexos após criação (temos o id agora)
+      if (files.length > 0) {
+        const urls = await uploadTaskAttachments(newTask.id, files)
+        await tasksService.updateTaskAttachments(newTask.id, urls)
+        flowcheck.patchLocalTask({ ...newTask, anexo_task: urls })
+      }
       showToast('Task criada com sucesso!', 'success')
     } else if (taskFormTask.value) {
-      await flowcheck.updateTask(taskFormTask.value.id, taskData, userId, userLevel)
+      const updated = await flowcheck.updateTask(taskFormTask.value.id, taskData, userId, userLevel)
+      // Upload de novos anexos (mantém os existentes)
+      if (files.length > 0) {
+        const existing = taskFormTask.value.anexo_task ?? []
+        const newUrls = await uploadTaskAttachments(updated.id, files)
+        const allUrls = [...existing, ...newUrls]
+        await tasksService.updateTaskAttachments(updated.id, allUrls)
+        flowcheck.patchLocalTask({ ...updated, anexo_task: allUrls })
+      }
       showToast('Task atualizada com sucesso!', 'success')
     }
     

@@ -140,6 +140,88 @@
           </div>
         </div>
 
+        <!-- ── Seção de Anexos da Task ── -->
+        <div class="task-attachments-section">
+          <div class="task-attachments-header">
+            <label>Anexos da Task ({{ taskAttachmentList.length }})</label>
+            <button
+              v-if="canEditThisTask"
+              type="button"
+              class="attach-task-btn"
+              @click="taskFileInputRef?.click()"
+              :disabled="uploadingTaskFiles"
+              title="Adicionar anexo à task"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+              {{ uploadingTaskFiles ? 'Enviando...' : 'Adicionar anexo' }}
+            </button>
+          </div>
+
+          <input
+            ref="taskFileInputRef"
+            type="file"
+            multiple
+            accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx,.zip,.rar"
+            class="file-input-hidden"
+            @change="onTaskFilesSelected"
+          />
+
+          <!-- Preview de arquivos pendentes (antes do upload) -->
+          <div v-if="pendingTaskFiles.length > 0" class="pending-files">
+            <div v-for="(pf, idx) in pendingTaskFiles" :key="idx" class="pending-file">
+              <img v-if="pf.preview" :src="pf.preview" class="pending-thumb" :alt="pf.file.name" />
+              <span v-else class="pending-file-icon">{{ fileIcon(pf.file.type) }}</span>
+              <span class="pending-file-name">{{ pf.file.name }}</span>
+              <span class="pending-file-size">{{ formatBytes(pf.file.size) }}</span>
+              <button class="pending-remove" @click="removePendingTaskFile(idx)" type="button" title="Remover">✕</button>
+            </div>
+            <button type="button" class="submit-comment-btn" style="margin-top:0.5rem" @click="submitTaskAttachments" :disabled="uploadingTaskFiles">
+              {{ uploadingTaskFiles ? 'Enviando...' : 'Salvar anexos' }}
+            </button>
+          </div>
+
+          <!-- Anexos já salvos -->
+          <div v-if="taskAttachmentList.length > 0" class="task-attach-list">
+            <!-- Imagens em grid -->
+            <div class="attach-images" v-if="taskAttachmentList.some(a => isImageUrl(a))">
+              <div
+                v-for="url in taskAttachmentList.filter(a => isImageUrl(a))"
+                :key="url"
+                class="attach-thumb"
+                @click="openTaskLightbox(url)"
+                :title="urlFilename(url)"
+              >
+                <img :src="url" :alt="urlFilename(url)" />
+                <button
+                  v-if="canEditThisTask"
+                  class="attach-remove-btn"
+                  @click.stop="removeTaskAttachment(url)"
+                  title="Remover"
+                >✕</button>
+              </div>
+            </div>
+            <!-- Outros arquivos -->
+            <div
+              v-for="url in taskAttachmentList.filter(a => !isImageUrl(a))"
+              :key="url"
+              class="attach-file"
+            >
+              <span class="attach-file-icon">{{ fileIconFromUrl(url) }}</span>
+              <a :href="url" target="_blank" rel="noopener noreferrer" class="attach-file-name">{{ urlFilename(url) }}</a>
+              <button
+                v-if="canEditThisTask"
+                class="attach-remove-btn"
+                @click="removeTaskAttachment(url)"
+                title="Remover"
+              >✕</button>
+            </div>
+          </div>
+
+          <div v-else-if="pendingTaskFiles.length === 0" class="no-comments">Nenhum anexo ainda.</div>
+        </div>
+
         <!-- ── Seção de Comentários ── -->
         <div class="comments-section">
           <label>Comentários ({{ sortedComments.length }})</label>
@@ -286,6 +368,19 @@
       <img :src="lightboxAttachment.url" :alt="lightboxAttachment.nome" class="lightbox-img" />
     </div>
   </div>
+  <!-- ── Lightbox de imagem (task attachments) ── -->
+  <div v-if="taskLightboxUrl" class="lightbox-overlay" @click="taskLightboxUrl = null">
+    <div class="lightbox-content" @click.stop>
+      <div class="lightbox-header">
+        <span class="lightbox-filename">{{ urlFilename(taskLightboxUrl) }}</span>
+        <div class="lightbox-actions">
+          <a :href="taskLightboxUrl" download target="_blank" rel="noopener noreferrer" class="lightbox-btn">⬇️ Baixar</a>
+          <button class="lightbox-btn close" @click="taskLightboxUrl = null">✕</button>
+        </div>
+      </div>
+      <img :src="taskLightboxUrl" :alt="urlFilename(taskLightboxUrl)" class="lightbox-img" />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -296,6 +391,8 @@ import { useAuth } from '@/composables/useAuth'
 import { tasksService } from '@/services/tasks'
 import {
   uploadAttachments,
+  uploadTaskAttachments,
+  deleteTaskAttachment,
   downloadAttachment,
   isImage,
   fileIcon,
@@ -327,6 +424,84 @@ interface PendingFile { file: File; preview: string | null }
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const pendingFiles = ref<PendingFile[]>([])
 const lightboxAttachment = ref<TaskCommentAttachment | null>(null)
+
+// ── Anexos da Task ──
+const taskFileInputRef = ref<HTMLInputElement | null>(null)
+const pendingTaskFiles = ref<PendingFile[]>([])
+const uploadingTaskFiles = ref(false)
+const taskLightboxUrl = ref<string | null>(null)
+
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']
+
+function isImageUrl(url: string): boolean {
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+  return IMAGE_EXTS.includes(ext)
+}
+
+function urlFilename(url: string): string {
+  return decodeURIComponent(url.split('?')[0].split('/').pop() ?? url)
+}
+
+function fileIconFromUrl(url: string): string {
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+  if (['pdf'].includes(ext)) return '📄'
+  if (['xlsx', 'xls', 'csv'].includes(ext)) return '📊'
+  if (['doc', 'docx'].includes(ext)) return '📝'
+  if (['zip', 'rar', '7z'].includes(ext)) return '🗜️'
+  return '📎'
+}
+
+const taskAttachmentList = computed(() => props.task?.anexo_task ?? [])
+
+function onTaskFilesSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files) return
+  for (const file of Array.from(input.files)) {
+    const preview = isImage(file.type) ? URL.createObjectURL(file) : null
+    pendingTaskFiles.value.push({ file, preview })
+  }
+  input.value = ''
+}
+
+function removePendingTaskFile(idx: number) {
+  const pf = pendingTaskFiles.value[idx]
+  if (pf.preview) URL.revokeObjectURL(pf.preview)
+  pendingTaskFiles.value.splice(idx, 1)
+}
+
+function openTaskLightbox(url: string) {
+  taskLightboxUrl.value = url
+}
+
+async function submitTaskAttachments() {
+  if (!props.task || pendingTaskFiles.value.length === 0) return
+  uploadingTaskFiles.value = true
+  try {
+    const newUrls = await uploadTaskAttachments(
+      props.task.id,
+      pendingTaskFiles.value.map(pf => pf.file)
+    )
+    pendingTaskFiles.value.forEach(pf => { if (pf.preview) URL.revokeObjectURL(pf.preview) })
+    pendingTaskFiles.value = []
+    const existing = props.task.anexo_task ?? []
+    const updated = await tasksService.updateTaskAttachments(props.task.id, [...existing, ...newUrls])
+    emit('comment-added', updated) // reusa o emit para atualizar a task no pai
+  } finally {
+    uploadingTaskFiles.value = false
+  }
+}
+
+async function removeTaskAttachment(url: string) {
+  if (!props.task) return
+  try {
+    await deleteTaskAttachment(url)
+  } catch {
+    // ignora erro de storage, remove da lista de qualquer forma
+  }
+  const existing = props.task.anexo_task ?? []
+  const updated = await tasksService.updateTaskAttachments(props.task.id, existing.filter(u => u !== url))
+  emit('comment-added', updated)
+}
 
 function onFilesSelected(e: Event) {
   const input = e.target as HTMLInputElement
@@ -748,6 +923,99 @@ const getInitials = (name: string | null | undefined): string => {
 .status-badge.not-started { background-color: #f1f3f5; color: #6c757d; }
 .type-badge { background-color: #f3e5f5; color: #7b1fa2; margin-right: 0.5rem; }
 .type-indicators { display: flex; flex-wrap: wrap; }
+
+/* ── Anexos da Task ── */
+.task-attachments-section {
+  border-top: 1px solid #e9ecef;
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-attachments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.task-attachments-header > label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.attach-task-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.attach-task-btn:hover:not(:disabled) { background: #e5e7eb; }
+.attach-task-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.task-attach-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.attach-thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid #e1e5e9;
+}
+
+.attach-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.attach-remove-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(0,0,0,0.55);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.attach-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.attach-file-name {
+  flex: 1;
+  color: #374151;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attach-file-name:hover { text-decoration: underline; }
 
 /* ── Comentários ── */
 .comments-section {

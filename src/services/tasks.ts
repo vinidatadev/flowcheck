@@ -200,6 +200,18 @@ export class TasksService {
     return data
   }
 
+  async updateTaskAttachments(taskId: number, urls: string[]): Promise<Task> {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ anexo_task: urls.length > 0 ? urls : null })
+      .eq('id', taskId)
+      .select()
+      .single()
+
+    if (error) throw new Error(`Erro ao salvar anexos: ${error.message}`)
+    return data
+  }
+
   async deleteTask(taskId: number, userLevel: number): Promise<void> {    // Validar permissão no frontend
     if (userLevel < 2) {
       throw new Error('Você não tem permissão para excluir tasks')

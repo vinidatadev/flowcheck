@@ -196,6 +196,42 @@
           </div>
         </div>
 
+        <!-- ── Seção: Anexos ── -->
+        <div class="form-section">
+          <h3>Anexos</h3>
+          <div class="attach-zone"
+            @dragover.prevent="dragOver = true"
+            @dragleave.prevent="dragOver = false"
+            @drop.prevent="onDrop"
+            :class="{ 'drag-active': dragOver }"
+          >
+            <input
+              ref="attachFileInputRef"
+              type="file"
+              multiple
+              accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx,.zip,.rar"
+              class="file-input-hidden"
+              @change="onAttachFilesSelected"
+            />
+            <div v-if="pendingAttachFiles.length === 0" class="attach-zone-placeholder" @click="attachFileInputRef?.click()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+              <span>Clique ou arraste arquivos aqui</span>
+            </div>
+            <div v-else class="pending-files">
+              <div v-for="(pf, idx) in pendingAttachFiles" :key="idx" class="pending-file">
+                <img v-if="pf.preview" :src="pf.preview" class="pending-thumb" :alt="pf.file.name" />
+                <span v-else class="pending-file-icon">{{ fileIconFromType(pf.file.type) }}</span>
+                <span class="pending-file-name">{{ pf.file.name }}</span>
+                <span class="pending-file-size">{{ formatBytes(pf.file.size) }}</span>
+                <button class="pending-remove" @click="removePendingAttach(idx)" type="button" title="Remover">✕</button>
+              </div>
+              <button type="button" class="attach-add-more" @click="attachFileInputRef?.click()">+ Adicionar mais</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ── Ações ── -->
         <div class="form-actions">
           <div class="left-actions">
@@ -231,6 +267,7 @@ import { usePermissions } from '@/composables/usePermissions'
 import UserMultiSelect from './UserMultiSelect.vue'
 import TagMultiSelect from './TagMultiSelect.vue'
 import SubtaskList from './SubtaskList.vue'
+import { isImage, fileIcon, formatBytes } from '@/services/attachments'
 import type { Task, TaskFormData } from '@/types/flowcheck'
 import type { User } from '@/types/user'
 
@@ -244,13 +281,49 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [data: TaskFormData]
+  save: [data: TaskFormData, files: File[]]
   delete: []
 }>()
 
 const loading = ref(false)
 const metadata = useMetadata()
 const permissions = usePermissions()
+
+// ── Anexos pendentes no formulário ──
+interface PendingAttach { file: File; preview: string | null }
+const attachFileInputRef = ref<HTMLInputElement | null>(null)
+const pendingAttachFiles = ref<PendingAttach[]>([])
+const dragOver = ref(false)
+
+function fileIconFromType(tipo: string): string {
+  return fileIcon(tipo)
+}
+
+function onAttachFilesSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files) return
+  addAttachFiles(Array.from(input.files))
+  input.value = ''
+}
+
+function onDrop(e: DragEvent) {
+  dragOver.value = false
+  const files = Array.from(e.dataTransfer?.files ?? [])
+  addAttachFiles(files)
+}
+
+function addAttachFiles(files: File[]) {
+  for (const file of files) {
+    const preview = isImage(file.type) ? URL.createObjectURL(file) : null
+    pendingAttachFiles.value.push({ file, preview })
+  }
+}
+
+function removePendingAttach(idx: number) {
+  const pf = pendingAttachFiles.value[idx]
+  if (pf.preview) URL.revokeObjectURL(pf.preview)
+  pendingAttachFiles.value.splice(idx, 1)
+}
 
 const isLevel2 = computed(() => (props.userLevel ?? 0) === 2)
 
@@ -303,6 +376,10 @@ function defaultSolicitante(): string[] {
 }
 
 function resetForm() {
+  // Limpa arquivos pendentes anteriores
+  pendingAttachFiles.value.forEach(pf => { if (pf.preview) URL.revokeObjectURL(pf.preview) })
+  pendingAttachFiles.value = []
+
   if (props.task) {
     formData.value = {
       titulo_task: props.task.titulo_task || '',
@@ -355,18 +432,22 @@ function formatDateForInput(dateString: string | null): string | null {
   }
 }
 
-function closeModal() {
-  emit('close')
-}
-
 async function handleSubmit() {
   if (!isFormValid.value) return
   loading.value = true
   try {
-    emit('save', formData.value)
+    const files = pendingAttachFiles.value.map(pf => pf.file)
+    emit('save', formData.value, files)
   } finally {
     loading.value = false
   }
+}
+
+function closeModal() {
+  // Limpa previews de object URLs antes de fechar
+  pendingAttachFiles.value.forEach(pf => { if (pf.preview) URL.revokeObjectURL(pf.preview) })
+  pendingAttachFiles.value = []
+  emit('close')
 }
 
 function handleDelete() {
@@ -507,6 +588,84 @@ function handleDelete() {
   font-size: 0.78rem;
   color: #adb5bd;
 }
+
+/* ── Zona de anexos ── */
+.file-input-hidden { display: none; }
+
+.attach-zone {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: border-color 0.2s, background 0.2s;
+  min-height: 72px;
+}
+
+.attach-zone.drag-active {
+  border-color: #667eea;
+  background: #f0f0ff;
+}
+
+.attach-zone-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  cursor: pointer;
+  height: 40px;
+}
+
+.attach-zone-placeholder:hover { color: #667eea; }
+
+.pending-files { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.pending-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.pending-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.pending-file-icon { font-size: 1.1rem; flex-shrink: 0; }
+.pending-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #374151; }
+.pending-file-size { color: #9ca3af; white-space: nowrap; }
+
+.pending-remove {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 2px;
+  line-height: 1;
+}
+.pending-remove:hover { color: #dc3545; }
+
+.attach-add-more {
+  background: none;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  color: #667eea;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.3rem 0.75rem;
+  align-self: flex-start;
+  margin-top: 0.2rem;
+}
+.attach-add-more:hover { background: #f0f0ff; }
 
 .form-actions {
   display: flex;

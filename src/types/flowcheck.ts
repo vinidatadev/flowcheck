@@ -56,6 +56,7 @@ export interface Task {
   modificado_por: string | null
   display_order: number | null
   id_obs_processo: number | null
+  anexo_task: string[] | null
 }
 
 export interface TaskFormData {

@@ -57,6 +57,35 @@ export async function uploadAttachments(
   return Promise.all(files.map(f => uploadAttachment(taskId, commentId, f)))
 }
 
+export async function uploadTaskAttachment(taskId: number, file: File): Promise<string> {
+  const ext = file.name.split('.').pop() ?? 'bin'
+  const path = `${taskId}/task-attachments/${crypto.randomUUID()}.${ext}`
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false })
+
+  if (error) throw new Error(`Erro ao enviar arquivo: ${error.message}`)
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}
+
+export async function uploadTaskAttachments(taskId: number, files: File[]): Promise<string[]> {
+  return Promise.all(files.map(f => uploadTaskAttachment(taskId, f)))
+}
+
+export async function deleteTaskAttachment(url: string): Promise<void> {
+  // Extrai o path relativo da URL pública: .../object/public/task-attachments/{filePath}
+  const bucketMarker = `/object/public/${BUCKET}/`
+  const bucketIdx = url.indexOf(bucketMarker)
+  if (bucketIdx === -1) return
+  const filePath = url.slice(bucketIdx + bucketMarker.length)
+
+  const { error } = await supabase.storage.from(BUCKET).remove([filePath])
+  if (error) throw new Error(`Erro ao remover arquivo: ${error.message}`)
+}
+
 export function downloadAttachment(attachment: TaskCommentAttachment): void {
   const a = document.createElement('a')
   a.href = attachment.url
