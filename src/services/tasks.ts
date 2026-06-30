@@ -150,7 +150,7 @@ export class TasksService {
     return data
   }
 
-  async updateTaskCategory(taskId: number, newCategoryId: number, statusConcluido: boolean, userLevel: number): Promise<void> {
+  async updateTaskCategory(taskId: number, newCategoryId: number, statusConcluido: boolean, userLevel: number, dataInicio: string | null, dataFim: string | null, percentiConcluido: number): Promise<void> {
     // Validar permissão no frontend
     if (userLevel < 2) {
       throw new Error('Você não tem permissão para mover tasks entre categorias')
@@ -160,7 +160,10 @@ export class TasksService {
       .from('tasks')
       .update({
         id_category: newCategoryId,
-        status_concluido: statusConcluido
+        status_concluido: statusConcluido,
+        data_inicio: dataInicio,
+        data_fim: dataFim,
+        percenti_concluido: percentiConcluido
       })
       .eq('id', taskId)
 

@@ -88,22 +88,61 @@ export function useFlowCheck() {
 
       // Determinar se deve marcar como concluído
       const statusConcluido = newCategory.category === 'Concluidos'
-      
+
+      // Calcular datas reais baseado na fase destino
+      const now = new Date().toISOString()
+      const oldCategory = state.categories.find(c => c.id === task.id_category)
+      const oldCategoryName = oldCategory?.category ?? ''
+      const newCategoryName = newCategory.category ?? ''
+
+      let data_inicio = task.data_inicio
+      let data_fim = task.data_fim
+      let percenti_concluido = task.percenti_concluido ?? 0
+
+      if (newCategoryName === 'Em Andamento') {
+        // Preenche início real apenas se ainda não tiver
+        if (!data_inicio) data_inicio = now
+        // Volta de Concluidos: limpa data de fim e zera progresso
+        if (oldCategoryName === 'Concluidos') {
+          data_fim = null
+          percenti_concluido = 0
+        }
+      } else if (newCategoryName === 'Concluidos') {
+        // Garante início real preenchido, seta fim real e 100%
+        if (!data_inicio) data_inicio = now
+        data_fim = now
+        percenti_concluido = 100
+      } else if (newCategoryName === 'Não Iniciado') {
+        // Volta para o início: limpa datas reais e zera progresso
+        data_inicio = null
+        data_fim = null
+        percenti_concluido = 0
+      }
+
       // Backup do estado anterior para rollback em caso de erro
       const oldCategoryId = task.id_category
       const oldStatusConcluido = task.status_concluido
+      const oldDataInicio = task.data_inicio
+      const oldDataFim = task.data_fim
+      const oldPercenti = task.percenti_concluido
 
       // Atualização otimista na UI
       task.id_category = newCategoryId
       task.status_concluido = statusConcluido
+      task.data_inicio = data_inicio
+      task.data_fim = data_fim
+      task.percenti_concluido = percenti_concluido
 
       try {
         // Atualizar no Supabase
-        await tasksService.updateTaskCategory(taskId, newCategoryId, statusConcluido, userLevel)
+        await tasksService.updateTaskCategory(taskId, newCategoryId, statusConcluido, userLevel, data_inicio, data_fim, percenti_concluido)
       } catch (error) {
         // Rollback em caso de erro
         task.id_category = oldCategoryId
         task.status_concluido = oldStatusConcluido
+        task.data_inicio = oldDataInicio
+        task.data_fim = oldDataFim
+        task.percenti_concluido = oldPercenti
         throw error
       }
     } catch (error) {
