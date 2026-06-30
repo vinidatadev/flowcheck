@@ -90,13 +90,26 @@
           </div>
         </div>
         
-        <div v-if="task.data_inicio || task.data_fim" class="detail-row">
+        <div v-if="task.data_inicio_plan || task.data_fim_plan" class="detail-row date-group">
+          <div class="date-group-header">Datas Planejadas</div>
+          <div v-if="task.data_inicio_plan" class="detail-section">
+            <label>Início Planejado:</label>
+            <p>{{ formatDate(task.data_inicio_plan) }}</p>
+          </div>
+          <div v-if="task.data_fim_plan" class="detail-section">
+            <label>Fim Planejado:</label>
+            <p>{{ formatDate(task.data_fim_plan) }}</p>
+          </div>
+        </div>
+
+        <div v-if="task.data_inicio || task.data_fim" class="detail-row date-group">
+          <div class="date-group-header">Datas Reais</div>
           <div v-if="task.data_inicio" class="detail-section">
-            <label>Data de Início:</label>
+            <label>Início Real:</label>
             <p>{{ formatDate(task.data_inicio) }}</p>
           </div>
           <div v-if="task.data_fim" class="detail-section">
-            <label>Data de Fim:</label>
+            <label>Fim Real:</label>
             <p>{{ formatDate(task.data_fim) }}</p>
           </div>
         </div>
@@ -817,6 +830,29 @@ const getInitials = (name: string | null | undefined): string => {
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.detail-row.date-group {
+  display: block;
+  border-left: 3px solid #667eea;
+  padding-left: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.date-group-header {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+
+.detail-row.date-group .detail-section {
+  display: inline-block;
+  width: calc(50% - 0.5rem);
+  vertical-align: top;
+  margin-right: 0.5rem;
 }
 
 .detail-section label {

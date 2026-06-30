@@ -61,13 +61,26 @@
         <div v-if="isLevel2" class="form-section">
           <h3>Detalhes</h3>
 
+          <div class="date-group-label">Datas Planejadas</div>
           <div class="form-row">
             <div class="form-group">
-              <label for="data_inicio">Data de Início</label>
+              <label for="data_inicio_plan">Início Planejado</label>
+              <input id="data_inicio_plan" v-model="formData.data_inicio_plan" type="datetime-local" :disabled="loading" />
+            </div>
+            <div class="form-group">
+              <label for="data_fim_plan">Fim Planejado</label>
+              <input id="data_fim_plan" v-model="formData.data_fim_plan" type="datetime-local" :disabled="loading" />
+            </div>
+          </div>
+
+          <div class="date-group-label">Datas Reais</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="data_inicio">Início Real</label>
               <input id="data_inicio" v-model="formData.data_inicio" type="datetime-local" :disabled="loading" />
             </div>
             <div class="form-group">
-              <label for="data_fim">Data de Fim</label>
+              <label for="data_fim">Fim Real</label>
               <input id="data_fim" v-model="formData.data_fim" type="datetime-local" :disabled="loading" />
             </div>
           </div>
@@ -337,6 +350,8 @@ const formData = ref<TaskFormData>({
   responsavel: [],
   data_inicio: null,
   data_fim: null,
+  data_inicio_plan: null,
+  data_fim_plan: null,
   subtask: [],
   subtask_bool: [],
   solicitante: [],
@@ -391,6 +406,8 @@ function resetForm() {
       responsavel: props.task.responsavel || [],
       data_inicio: formatDateForInput(props.task.data_inicio),
       data_fim: formatDateForInput(props.task.data_fim),
+      data_inicio_plan: formatDateForInput(props.task.data_inicio_plan),
+      data_fim_plan: formatDateForInput(props.task.data_fim_plan),
       subtask: props.task.subtask || [],
       subtask_bool: props.task.subtask_bool || [],
       solicitante: props.task.solicitante?.length
@@ -412,6 +429,8 @@ function resetForm() {
       responsavel: [],
       data_inicio: null,
       data_fim: null,
+      data_inicio_plan: null,
+      data_fim_plan: null,
       subtask: [],
       subtask_bool: [],
       solicitante: defaultSolicitante(),
@@ -587,6 +606,16 @@ function handleDelete() {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
   color: #adb5bd;
+}
+
+.date-group-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 /* ── Zona de anexos ── */

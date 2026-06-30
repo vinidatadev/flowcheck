@@ -282,6 +282,8 @@ export function useAiAssistant(ctx: AiAssistantContext) {
       percenti_concluido: 0,
       data_inicio: null,
       data_fim: null,
+      data_inicio_plan: null,
+      data_fim_plan: null,
       subtask: [],
       subtask_bool: [],
       solicitante: [],

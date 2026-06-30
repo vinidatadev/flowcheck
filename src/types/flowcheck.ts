@@ -42,6 +42,8 @@ export interface Task {
   responsavel: string[] | null
   data_inicio: string | null
   data_fim: string | null
+  data_inicio_plan: string | null
+  data_fim_plan: string | null
   prioridade: boolean | null
   status_concluido: boolean | null
   subtask: string[] | null
@@ -69,6 +71,8 @@ export interface TaskFormData {
   responsavel: string[]
   data_inicio: string | null
   data_fim: string | null
+  data_inicio_plan: string | null
+  data_fim_plan: string | null
   subtask: string[]
   subtask_bool: boolean[]
   solicitante: string[]
